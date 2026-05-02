@@ -1,0 +1,24 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Env
+.env
+
+# OS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Data / Models
+*.npy
+*.index
+knowledge_base/
+cache/

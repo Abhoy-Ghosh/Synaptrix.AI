@@ -8,3 +8,13 @@ Phase 6 → Docker
 Phase 7 → Deployment
 Phase 8 → Optimization
 
+
+pip install fastapi uvicorn python-dotenv
+pip install requests numpy faiss-cpu
+pip install sentence-transformers
+pip install sqlalchemy psycopg2-binary
+pip install python-jose passlib[bcrypt]
+
+ctrl+shift+` 
+
+source venv/bin/activate
