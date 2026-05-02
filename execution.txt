@@ -1,0 +1,10 @@
+Phase 0 → Setup
+Phase 1 → Backend Core
+Phase 2 → AI Pipeline
+Phase 3 → Semantic + FAISS
+Phase 4 → DB + Auth + Credits
+Phase 5 → Frontend
+Phase 6 → Docker
+Phase 7 → Deployment
+Phase 8 → Optimization
+
