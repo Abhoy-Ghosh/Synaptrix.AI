@@ -1,7 +1,11 @@
 import requests
 import xml.etree.ElementTree as ET
+import time
 
 def fetch_arxiv_papers(query: str, max_results: int = 5):
+
+    time.sleep(1)  # ✅ avoid rate limit
+
     url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={max_results}"
     
     response = requests.get(url)
@@ -19,4 +23,3 @@ def fetch_arxiv_papers(query: str, max_results: int = 5):
         })
 
     return papers
-

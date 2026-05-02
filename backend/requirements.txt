@@ -28,3 +28,4 @@ passlib[bcrypt]==1.7.4
 # Optional (better API handling)
 pydantic==2.7.4
 
+google-generativeai
