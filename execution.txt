@@ -24,3 +24,20 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 pkill -f uvicorn
 pkill -f python
+
+
+cd /home/abhoy/.cache/huggingface/ #model cached here
+
+User Query
+→ arXiv Fetch
+→ Embeddings (MiniLM)
+→ Cosine Ranking
+→ Top Papers
+
+
+cache
+Query → lowercase → key
+↓
+Saved in JSON file
+↓
+Next time → fetched instantly

@@ -1,5 +1,7 @@
 from sentence_transformers import SentenceTransformer
 from app.services.arxiv_service import fetch_arxiv_papers
+from app.services.llm_service import summarize_papers
+from app.cache.cache import get_cached_result, set_cached_result
 import numpy as np
 
 model = None
@@ -17,13 +19,19 @@ def run_pipeline(topic: str):
 
     model = get_model()
 
-    # Step 1: Fetch papers (reduced for speed)
+    # Step 0: Check cache
+    cached = get_cached_result(topic)
+    if cached:
+        print("⚡ CACHE HIT")
+        return cached
+
+    # Step 1: Fetch papers
     papers = fetch_arxiv_papers(topic, max_results=5)
 
     if not papers:
         return {"error": "No papers found"}
 
-    # Step 2: embeddings (limit text size)
+    # Step 2: embeddings
     texts = [p["abstract"][:500] for p in papers]
     paper_embeddings = model.encode(texts)
 
@@ -39,11 +47,17 @@ def run_pipeline(topic: str):
     ranked_indices = np.argsort(scores)[::-1]
     top_papers = [papers[i] for i in ranked_indices[:5]]
 
-    # Step 6: TEMP summary (LLM disabled for stability)
-    summary = "LLM temporarily disabled"
+    # Step 6: summarize
+    summary = summarize_papers(top_papers, topic)
 
-    return {
+    # Step 7: prepare result
+    result = {
         "topic": topic,
         "top_papers": top_papers,
         "summary": summary
     }
+
+    # Step 8: cache result
+    set_cached_result(topic, result)
+
+    return result
