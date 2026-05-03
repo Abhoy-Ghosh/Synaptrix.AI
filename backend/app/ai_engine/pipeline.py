@@ -4,6 +4,8 @@ from app.agents.analyzer import analyze
 from app.agents.similarity import find_similarities
 from app.agents.gap_finder import find_gaps
 from app.cache.cache import get_cached_result, set_cached_result
+from app.retrieval.vector_store import add_to_index, search_index
+
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
@@ -20,40 +22,62 @@ def get_model():
 
 def run_pipeline(topic: str):
 
-    # Step 0: Cache check FIRST
+    print("🚀 PIPELINE RUNNING")
+
+    # -----------------------------
+    # STEP 0: CACHE CHECK
+    # -----------------------------
     cached = get_cached_result(topic)
     if cached:
         print("⚡ CACHE HIT")
         return cached
 
-    # Step 1: Load model only if needed
+    # -----------------------------
+    # STEP 1: LOAD MODEL
+    # -----------------------------
     emb_model = get_model()
 
-    # Step 2: Retrieve
+    # -----------------------------
+    # STEP 2: RETRIEVE PAPERS
+    # -----------------------------
     papers = retrieve_papers(topic)
 
     if not papers:
         return {"error": "No papers found"}
 
-    # Step 3: Embedding + ranking
+    # -----------------------------
+    # STEP 3: EMBEDDINGS
+    # -----------------------------
     texts = [p["abstract"][:500] for p in papers]
-    paper_embeddings = emb_model.encode(texts)
-    query_embedding = emb_model.encode([topic])[0]
+    paper_embeddings = emb_model.encode(texts).astype("float32")
 
-    scores = np.dot(paper_embeddings, query_embedding) / (
-        np.linalg.norm(paper_embeddings, axis=1) * np.linalg.norm(query_embedding)
-    )
+    # -----------------------------
+    # STEP 4: STORE IN FAISS
+    # -----------------------------
+    add_to_index(paper_embeddings, papers)
+    print(f"📦 Stored {len(papers)} papers in FAISS")
 
-    ranked_indices = np.argsort(scores)[::-1]
-    top_papers = [papers[i] for i in ranked_indices[:5]]
+    # -----------------------------
+    # STEP 5: QUERY EMBEDDING
+    # -----------------------------
+    query_embedding = emb_model.encode([topic])[0].astype("float32")
 
-    # Step 4: Agents
+    # -----------------------------
+    # STEP 6: SEARCH FROM FAISS
+    # -----------------------------
+    top_papers = search_index(query_embedding, k=5)
+
+    # -----------------------------
+    # STEP 7: MULTI-AGENT PROCESSING
+    # -----------------------------
     summary = summarize(topic, top_papers)
     analysis = analyze(topic, top_papers)
     similarities = find_similarities(top_papers)
     gaps = find_gaps(topic, top_papers)
 
-    # Step 5: Final result (FIXED)
+    # -----------------------------
+    # STEP 8: FINAL RESPONSE
+    # -----------------------------
     result = {
         "topic": topic,
         "top_papers": top_papers,
@@ -63,7 +87,9 @@ def run_pipeline(topic: str):
         "gaps": gaps
     }
 
-    # Step 6: Cache full result
+    # -----------------------------
+    # STEP 9: CACHE RESULT
+    # -----------------------------
     set_cached_result(topic, result)
 
     return result
