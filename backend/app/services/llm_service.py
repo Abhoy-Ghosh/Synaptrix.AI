@@ -1,13 +1,11 @@
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 import os
 
 load_dotenv()
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-# 🔑 Try this model (works on v1beta)
-model = genai.GenerativeModel("models/gemini-1.5-flash")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+MODEL = "gemini-2.5-flash"
 
 
 def summarize_papers(papers, topic):
@@ -28,8 +26,10 @@ Give:
 Papers:
 {content}
 """
-
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt
+        )
         return response.text if response.text else "No summary generated"
 
     except Exception as e:
