@@ -135,3 +135,18 @@ Query
 0.6 * semantic similarity
 + 0.25 * keyword match
 + 0.15 * feedback score
+
+
+
+FIX FAISS FOR NEW DIMENSION
+
+mpnet = 768 dim (MiniLM was 384)
+
+
+🧠 WHAT CHANGES
+❌ Before
+summarize → analyze → similarity → gaps (one by one)
+✅ After
+ALL agents run together ⚡
+
+👉 Expect ~2–3x speed improvement

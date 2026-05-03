@@ -27,6 +27,21 @@ def get_model():
 
 
 # -----------------------------
+# DEDUPLICATION (🔥 IMPORTANT)
+# -----------------------------
+def deduplicate(papers):
+    seen = set()
+    unique = []
+
+    for p in papers:
+        if p["title"] not in seen:
+            seen.add(p["title"])
+            unique.append(p)
+
+    return unique
+
+
+# -----------------------------
 # QUALITY CHECK
 # -----------------------------
 def is_good_result(results):
@@ -34,7 +49,7 @@ def is_good_result(results):
 
 
 # -----------------------------
-# KEYWORD MATCH
+# KEYWORD SCORE
 # -----------------------------
 def keyword_score(text, topic):
     text = text.lower()
@@ -49,40 +64,32 @@ def keyword_score(text, topic):
 
 
 # -----------------------------
-# HYBRID RANKING
+# HYBRID RANKING (OPTIMIZED)
 # -----------------------------
-def rerank_hybrid(papers, topic, query_embedding, model):
-
-    texts = [p["abstract"][:500] for p in papers]
-    embeddings = model.encode(texts)
+def rerank_hybrid(papers, topic, query_embedding, embeddings):
 
     final_scores = []
 
     for i, paper in enumerate(papers):
         emb = embeddings[i]
 
-        # 1. Semantic similarity
+        # Semantic similarity
         semantic = np.dot(emb, query_embedding) / (
             np.linalg.norm(emb) * np.linalg.norm(query_embedding)
         )
 
-        # 2. Keyword score
+        # Keyword match
         keyword = keyword_score(paper["abstract"], topic)
 
-        # 3. Feedback score (paper-level learning)
+        # Feedback score
         feedback = get_paper_score(paper["title"]) * 0.1
 
-        # 4. Title boost
-        title_boost = 0
-        if topic.lower() in paper["title"].lower():
-            title_boost = 0.1
+        # Title boost
+        title_boost = 0.1 if topic.lower() in paper["title"].lower() else 0
 
-        # 5. Optional exact phrase boost
-        phrase_boost = 0
-        if topic.lower() in paper["abstract"].lower():
-            phrase_boost = 0.1
+        # Phrase boost
+        phrase_boost = 0.1 if topic.lower() in paper["abstract"].lower() else 0
 
-        # FINAL SCORE
         final = (
             0.6 * semantic +
             0.25 * keyword +
@@ -118,26 +125,32 @@ def run_pipeline(topic: str):
     # -----------------------------
     # STEP 1: QUERY EMBEDDING
     # -----------------------------
-    query_embedding = emb_model.encode([topic])[0]
+    query_embedding = emb_model.encode([topic])[0].astype("float32")
 
     # -----------------------------
-    # STEP 2: FEEDBACK CHECK
+    # STEP 2: FEEDBACK
     # -----------------------------
     feedback = get_feedback(topic)
 
     # -----------------------------
-    # STEP 3: FAISS SEARCH FIRST
+    # STEP 3: FAISS SEARCH
     # -----------------------------
-    faiss_results = search_index(query_embedding, k=10)
+    faiss_results = search_index(query_embedding, k=15)
+
+    # 🔥 DEDUP HERE (VERY IMPORTANT)
+    faiss_results = deduplicate(faiss_results)
 
     if is_good_result(faiss_results) and feedback != "bad":
         print("⚡ Using FAISS memory")
+
+        texts = [p["abstract"][:500] for p in faiss_results]
+        embeddings = emb_model.encode(texts)
 
         top_papers = rerank_hybrid(
             faiss_results,
             topic,
             query_embedding,
-            emb_model
+            embeddings
         )[:5]
 
     else:
@@ -148,24 +161,33 @@ def run_pipeline(topic: str):
         if not papers:
             return {"error": "No papers found"}
 
+        # 🔥 DEDUP BEFORE FAISS INSERT
+        papers = deduplicate(papers)
+
         texts = [p["abstract"][:500] for p in papers]
         embeddings = emb_model.encode(texts).astype("float32")
 
         # Store in FAISS
         add_to_index(embeddings, papers)
 
-        # Search again from FAISS
-        faiss_results = search_index(query_embedding, k=10)
+        # Search again
+        faiss_results = search_index(query_embedding, k=15)
+
+        # 🔥 DEDUP AGAIN AFTER SEARCH
+        faiss_results = deduplicate(faiss_results)
+
+        texts = [p["abstract"][:500] for p in faiss_results]
+        embeddings = emb_model.encode(texts)
 
         top_papers = rerank_hybrid(
             faiss_results,
             topic,
             query_embedding,
-            emb_model
+            embeddings
         )[:5]
 
     # -----------------------------
-    # STEP 4: MULTI-AGENTS
+    # STEP 4: AGENTS
     # -----------------------------
     summary = summarize(topic, top_papers)
     analysis = analyze(topic, top_papers)
@@ -173,7 +195,7 @@ def run_pipeline(topic: str):
     gaps = find_gaps(topic, top_papers)
 
     # -----------------------------
-    # STEP 5: FINAL RESULT
+    # STEP 5: RESULT
     # -----------------------------
     result = {
         "topic": topic,
