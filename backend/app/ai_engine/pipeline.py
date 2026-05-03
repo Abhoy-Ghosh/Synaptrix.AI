@@ -11,13 +11,17 @@ from app.feedback.paper_feedback import get_paper_score
 
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import asyncio
 
-# -----------------------------
-# GLOBAL MODEL
-# -----------------------------
+def normalize_topic(topic):
+    return topic.strip().lower()
+
 model = None
 
 
+# -----------------------------
+# MODEL
+# -----------------------------
 def get_model():
     global model
     if model is None:
@@ -27,17 +31,15 @@ def get_model():
 
 
 # -----------------------------
-# DEDUPLICATION (🔥 IMPORTANT)
+# DEDUP
 # -----------------------------
 def deduplicate(papers):
     seen = set()
     unique = []
-
     for p in papers:
         if p["title"] not in seen:
             seen.add(p["title"])
             unique.append(p)
-
     return unique
 
 
@@ -54,17 +56,26 @@ def is_good_result(results):
 def keyword_score(text, topic):
     text = text.lower()
     topic_words = topic.lower().split()
-
-    score = 0
-    for word in topic_words:
-        if word in text:
-            score += 1
-
+    score = sum(1 for w in topic_words if w in text)
     return score / max(len(topic_words), 1)
 
+# -----------------------------
+# FILER RELAVANT PAPERS
+# -----------------------------
+def filter_relevant(papers, topic):
+    topic_words = topic.lower().split()
+    filtered = []
+
+    for p in papers:
+        text = p["abstract"].lower()
+
+        if any(word in text for word in topic_words):
+            filtered.append(p)
+
+    return filtered
 
 # -----------------------------
-# HYBRID RANKING (OPTIMIZED)
+# HYBRID RANKING
 # -----------------------------
 def rerank_hybrid(papers, topic, query_embedding, embeddings):
 
@@ -73,21 +84,13 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
     for i, paper in enumerate(papers):
         emb = embeddings[i]
 
-        # Semantic similarity
         semantic = np.dot(emb, query_embedding) / (
             np.linalg.norm(emb) * np.linalg.norm(query_embedding)
         )
 
-        # Keyword match
         keyword = keyword_score(paper["abstract"], topic)
-
-        # Feedback score
-        feedback = get_paper_score(paper["title"]) * 0.1
-
-        # Title boost
+        feedback = get_paper_score(paper["title"]) * 0.5
         title_boost = 0.1 if topic.lower() in paper["title"].lower() else 0
-
-        # Phrase boost
         phrase_boost = 0.1 if topic.lower() in paper["abstract"].lower() else 0
 
         final = (
@@ -101,8 +104,26 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
         final_scores.append((final, paper))
 
     final_scores.sort(key=lambda x: x[0], reverse=True)
-
     return [p for _, p in final_scores]
+
+
+# -----------------------------
+# ASYNC AGENTS
+# -----------------------------
+async def run_async_agents(topic, top_papers):
+    loop = asyncio.get_event_loop()
+
+    summary_task = loop.run_in_executor(None, summarize, topic, top_papers)
+    analysis_task = loop.run_in_executor(None, analyze, topic, top_papers)
+    sim_task = loop.run_in_executor(None, find_similarities, top_papers)
+    gap_task = loop.run_in_executor(None, find_gaps, topic, top_papers)
+
+    return await asyncio.gather(
+        summary_task,
+        analysis_task,
+        sim_task,
+        gap_task
+    )
 
 
 # -----------------------------
@@ -110,38 +131,47 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
 # -----------------------------
 def run_pipeline(topic: str):
 
-    print("🚀 PIPELINE RUNNING")
+    topic = normalize_topic(topic)
 
-    # -----------------------------
-    # STEP 0: CACHE
-    # -----------------------------
-    cached = get_cached_result(topic)
-    if cached:
-        print("⚡ CACHE HIT")
-        return cached
+    print("🚀 PIPELINE RUNNING")
 
     emb_model = get_model()
 
     # -----------------------------
-    # STEP 1: QUERY EMBEDDING
+    # STEP 0: FEEDBACK FIRST 
+    # -----------------------------
+    feedback = get_feedback(topic)
+
+    # CLEAR CACHE ON BAD FEEDBACK
+    if feedback == "bad":
+        print("⚠️ Clearing cache due to bad feedback")
+        set_cached_result(topic, None)    
+
+    # -----------------------------
+    # STEP 1: CACHE (SMART)
+    # -----------------------------
+    cached = get_cached_result(topic)
+
+    if cached and feedback != "bad":
+        print("⚡ CACHE HIT (VALID)")
+        return cached
+    elif cached:
+        print("⚠️ Cache ignored due to BAD feedback")
+
+    # -----------------------------
+    # STEP 2: QUERY EMBEDDING
     # -----------------------------
     query_embedding = emb_model.encode([topic])[0].astype("float32")
 
     # -----------------------------
-    # STEP 2: FEEDBACK
-    # -----------------------------
-    feedback = get_feedback(topic)
-
-    # -----------------------------
-    # STEP 3: FAISS SEARCH
+    # STEP 3: FAISS
     # -----------------------------
     faiss_results = search_index(query_embedding, k=15)
-
-    # 🔥 DEDUP HERE (VERY IMPORTANT)
     faiss_results = deduplicate(faiss_results)
+    faiss_results = filter_relevant(faiss_results, topic) 
 
     if is_good_result(faiss_results) and feedback != "bad":
-        print("⚡ Using FAISS memory")
+        print("⚡ Using FAISS")
 
         texts = [p["abstract"][:500] for p in faiss_results]
         embeddings = emb_model.encode(texts)
@@ -157,24 +187,19 @@ def run_pipeline(topic: str):
         print("🌐 Fetching fresh data")
 
         papers = retrieve_papers(topic)
-
         if not papers:
             return {"error": "No papers found"}
 
-        # 🔥 DEDUP BEFORE FAISS INSERT
         papers = deduplicate(papers)
 
         texts = [p["abstract"][:500] for p in papers]
         embeddings = emb_model.encode(texts).astype("float32")
 
-        # Store in FAISS
         add_to_index(embeddings, papers)
 
-        # Search again
         faiss_results = search_index(query_embedding, k=15)
-
-        # 🔥 DEDUP AGAIN AFTER SEARCH
         faiss_results = deduplicate(faiss_results)
+        faiss_results = filter_relevant(faiss_results, topic) 
 
         texts = [p["abstract"][:500] for p in faiss_results]
         embeddings = emb_model.encode(texts)
@@ -187,12 +212,11 @@ def run_pipeline(topic: str):
         )[:5]
 
     # -----------------------------
-    # STEP 4: AGENTS
+    # STEP 4: ASYNC AGENTS ⚡
     # -----------------------------
-    summary = summarize(topic, top_papers)
-    analysis = analyze(topic, top_papers)
-    similarities = find_similarities(top_papers)
-    gaps = find_gaps(topic, top_papers)
+    summary, analysis, similarities, gaps = asyncio.run(
+        run_async_agents(topic, top_papers)
+    )
 
     # -----------------------------
     # STEP 5: RESULT
