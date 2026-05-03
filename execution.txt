@@ -127,3 +127,11 @@ Query
        fetch API → update FAISS
  → LLM
  → cache
+
+
+
+ HYBRID RANKING
+ Final Score =
+0.6 * semantic similarity
++ 0.25 * keyword match
++ 0.15 * feedback score

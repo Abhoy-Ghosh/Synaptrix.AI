@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from app.ai_engine.pipeline import run_pipeline
 from app.feedback.feedback_store import add_feedback
+from app.feedback.paper_feedback import add_paper_feedback  # ✅ NEW
 
 app = FastAPI()
 
@@ -17,6 +18,11 @@ class Query(BaseModel):
 class Feedback(BaseModel):
     topic: str
     feedback: str  # "good" or "bad"
+
+
+class PaperFeedback(BaseModel):   # ✅ NEW
+    title: str
+    score: int  # +1 or -1
 
 
 # -----------------------------
@@ -37,7 +43,7 @@ def generate(query: Query):
 
 
 # -----------------------------
-# FEEDBACK ENDPOINT
+# TOPIC FEEDBACK
 # -----------------------------
 @app.post("/feedback")
 def submit_feedback(data: Feedback):
@@ -50,4 +56,21 @@ def submit_feedback(data: Feedback):
         "message": "Feedback saved",
         "topic": data.topic,
         "feedback": data.feedback
+    }
+
+
+# -----------------------------
+# PAPER-LEVEL FEEDBACK (🔥 IMPORTANT)
+# -----------------------------
+@app.post("/paper-feedback")
+def submit_paper_feedback(data: PaperFeedback):
+    if data.score not in [1, -1]:
+        return {"error": "score must be +1 or -1"}
+
+    add_paper_feedback(data.title, data.score)
+
+    return {
+        "message": "Paper feedback stored",
+        "title": data.title,
+        "score": data.score
     }
