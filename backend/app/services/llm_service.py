@@ -1,10 +1,13 @@
-from google import genai
-import os
 from dotenv import load_dotenv
+import google.generativeai as genai
+import os
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# 🔑 Try this model (works on v1beta)
+model = genai.GenerativeModel("models/gemini-1.5-flash")
 
 
 def summarize_papers(papers, topic):
@@ -15,32 +18,18 @@ def summarize_papers(papers, topic):
         ])[:2000]
 
         prompt = f"""
-You are an expert research assistant.
-
 Topic: {topic}
 
-Provide STRICTLY:
-
-1. Key Insights:
-- point 1
-- point 2
-
-2. Common Themes:
-- theme 1
-- theme 2
-
-3. Summary:
-(3-4 lines)
+Give:
+1. Key insights
+2. Common themes
+3. Short summary
 
 Papers:
 {content}
 """
 
-        response = client.models.generate_content(
-            model="models/gemini-1.5-flash",  # ✅ FIXED
-            contents=prompt
-        )
-
+        response = model.generate_content(prompt)
         return response.text if response.text else "No summary generated"
 
     except Exception as e:
