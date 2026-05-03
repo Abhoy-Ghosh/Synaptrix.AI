@@ -41,3 +41,14 @@ Query → lowercase → key
 Saved in JSON file
 ↓
 Next time → fetched instantly
+
+
+Agent
+Query
+ → Retriever Agent
+ → Ranker (embeddings)
+ → Summarizer Agent
+ → Analyzer Agent
+ → Similarity Agent (instead of plagiarism)
+ → Gap Finder Agent
+ → Final Output
