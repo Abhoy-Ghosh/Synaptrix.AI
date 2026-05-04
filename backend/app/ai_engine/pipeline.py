@@ -4,7 +4,7 @@ from app.agents.analyzer import analyze
 from app.agents.similarity import find_similarities
 from app.agents.gap_finder import find_gaps
 
-from app.cache.cache import get_cached_result, set_cached_result
+from app.cache.cache import get_cached_result, set_cached_result, delete_cached_result
 from app.retrieval.vector_store import add_to_index, search_index
 from app.feedback.feedback_store import get_feedback
 from app.feedback.paper_feedback import get_paper_score
@@ -13,21 +13,33 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import asyncio
 
+
+# -----------------------------
+# NORMALIZE
+# -----------------------------
 def normalize_topic(topic):
     return topic.strip().lower()
-
-model = None
 
 
 # -----------------------------
 # MODEL
 # -----------------------------
+model = None
+
 def get_model():
     global model
     if model is None:
         print("🔥 Loading embedding model...")
         model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
     return model
+
+
+# -----------------------------
+# WARMUP
+# -----------------------------
+def warmup_model():
+    get_model()
+    print("✅ Embedding model warm")
 
 
 # -----------------------------
@@ -59,26 +71,24 @@ def keyword_score(text, topic):
     score = sum(1 for w in topic_words if w in text)
     return score / max(len(topic_words), 1)
 
+
 # -----------------------------
-# FILER RELAVANT PAPERS
+# FILTER
 # -----------------------------
 def filter_relevant(papers, topic):
     topic_words = topic.lower().split()
     filtered = []
-
     for p in papers:
         text = p["abstract"].lower()
-
         if any(word in text for word in topic_words):
             filtered.append(p)
-
     return filtered
+
 
 # -----------------------------
 # HYBRID RANKING
 # -----------------------------
 def rerank_hybrid(papers, topic, query_embedding, embeddings):
-
     final_scores = []
 
     for i, paper in enumerate(papers):
@@ -89,7 +99,7 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
         )
 
         keyword = keyword_score(paper["abstract"], topic)
-        feedback = get_paper_score(paper["title"]) * 0.5
+        feedback = min(get_paper_score(paper["title"]), 1.0) * 0.15
         title_boost = 0.1 if topic.lower() in paper["title"].lower() else 0
         phrase_boost = 0.1 if topic.lower() in paper["abstract"].lower() else 0
 
@@ -108,7 +118,25 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
 
 
 # -----------------------------
-# ASYNC AGENTS
+# MODE SELECTION 🧠
+# -----------------------------
+def choose_mode(topic, papers, user_mode=None):
+
+    if user_mode in ["fast", "parallel", "research"]:
+        return user_mode
+
+    # auto mode
+    if len(topic.split()) > 5:
+        return "research"
+
+    if len(papers) < 3:
+        return "research"
+
+    return "parallel"
+
+
+# -----------------------------
+# ASYNC AGENTS ⚡ (UNCHANGED)
 # -----------------------------
 async def run_async_agents(topic, top_papers):
     loop = asyncio.get_event_loop()
@@ -118,37 +146,33 @@ async def run_async_agents(topic, top_papers):
     sim_task = loop.run_in_executor(None, find_similarities, top_papers)
     gap_task = loop.run_in_executor(None, find_gaps, topic, top_papers)
 
-    return await asyncio.gather(
-        summary_task,
-        analysis_task,
-        sim_task,
-        gap_task
+    return await asyncio.wait_for(
+        asyncio.gather(summary_task, analysis_task, sim_task, gap_task),
+        timeout=60.0
     )
 
 
 # -----------------------------
 # MAIN PIPELINE
 # -----------------------------
-def run_pipeline(topic: str):
+async def run_pipeline(topic: str, user_mode: str = None):
 
     topic = normalize_topic(topic)
-
     print("🚀 PIPELINE RUNNING")
 
     emb_model = get_model()
 
     # -----------------------------
-    # STEP 0: FEEDBACK FIRST 
+    # FEEDBACK
     # -----------------------------
     feedback = get_feedback(topic)
 
-    # CLEAR CACHE ON BAD FEEDBACK
     if feedback == "bad":
         print("⚠️ Clearing cache due to bad feedback")
-        set_cached_result(topic, None)    
+        delete_cached_result(topic)
 
     # -----------------------------
-    # STEP 1: CACHE (SMART)
+    # CACHE
     # -----------------------------
     cached = get_cached_result(topic)
 
@@ -159,16 +183,16 @@ def run_pipeline(topic: str):
         print("⚠️ Cache ignored due to BAD feedback")
 
     # -----------------------------
-    # STEP 2: QUERY EMBEDDING
+    # QUERY EMBEDDING
     # -----------------------------
     query_embedding = emb_model.encode([topic])[0].astype("float32")
 
     # -----------------------------
-    # STEP 3: FAISS
+    # FAISS SEARCH
     # -----------------------------
     faiss_results = search_index(query_embedding, k=15)
     faiss_results = deduplicate(faiss_results)
-    faiss_results = filter_relevant(faiss_results, topic) 
+    faiss_results = filter_relevant(faiss_results, topic)
 
     if is_good_result(faiss_results) and feedback != "bad":
         print("⚡ Using FAISS")
@@ -187,6 +211,7 @@ def run_pipeline(topic: str):
         print("🌐 Fetching fresh data")
 
         papers = retrieve_papers(topic)
+
         if not papers:
             return {"error": "No papers found"}
 
@@ -199,7 +224,7 @@ def run_pipeline(topic: str):
 
         faiss_results = search_index(query_embedding, k=15)
         faiss_results = deduplicate(faiss_results)
-        faiss_results = filter_relevant(faiss_results, topic) 
+        faiss_results = filter_relevant(faiss_results, topic)
 
         texts = [p["abstract"][:500] for p in faiss_results]
         embeddings = emb_model.encode(texts)
@@ -212,14 +237,43 @@ def run_pipeline(topic: str):
         )[:5]
 
     # -----------------------------
-    # STEP 4: ASYNC AGENTS ⚡
+    # MODE SELECTION
     # -----------------------------
-    summary, analysis, similarities, gaps = asyncio.run(
-        run_async_agents(topic, top_papers)
-    )
+    mode = choose_mode(topic, top_papers, user_mode)
+    print(f"⚙️ MODE: {mode}")
 
     # -----------------------------
-    # STEP 5: RESULT
+    # EXECUTION
+    # -----------------------------
+    try:
+        if mode == "fast":
+            from app.agents.llm_combined import generate_full_report
+
+            report = generate_full_report(topic, top_papers)
+
+            summary = report
+            analysis = report
+            gaps = report
+            similarities = find_similarities(top_papers)
+
+        elif mode == "parallel":
+            summary, analysis, similarities, gaps = await run_async_agents(topic, top_papers)
+
+        else:  # research mode
+            from app.agents.multi_agent import run_multi_agent
+
+            result = await run_multi_agent(topic, top_papers)
+
+            summary = result["summary"]
+            analysis = result["analysis"]
+            gaps = result["gaps"]
+            similarities = find_similarities(top_papers)
+
+    except asyncio.TimeoutError:
+        return {"error": "LLM agents timed out. Please try again."}
+
+    # -----------------------------
+    # FINAL RESULT
     # -----------------------------
     result = {
         "topic": topic,
@@ -227,12 +281,13 @@ def run_pipeline(topic: str):
         "summary": summary,
         "analysis": analysis,
         "similarities": similarities,
-        "gaps": gaps
+        "gaps": gaps,
+        "mode_used": mode
     }
 
     # -----------------------------
-    # STEP 6: CACHE
+    # CACHE SAVE
     # -----------------------------
     set_cached_result(topic, result)
 
-    return result
+    return resulti 

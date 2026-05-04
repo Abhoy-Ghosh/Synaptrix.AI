@@ -1,4 +1,4 @@
-from app.services.llm_service import summarize_papers
+from app.services.llm_service import call_llm
 
 
 def find_gaps(topic, papers):
@@ -14,16 +14,16 @@ You are a research strategist.
 
 Topic: {topic}
 
-Identify:
-- Missing areas in research
+Find:
+- Missing research areas
 - Under-explored topics
-- Opportunities for innovation
+- Future directions (based on missing coverage)
 
 Papers:
 {content}
 """
 
     try:
-        return summarize_papers(papers, topic)
+        return call_llm(prompt)
     except Exception as e:
         return f"Gap analysis error: {str(e)}"

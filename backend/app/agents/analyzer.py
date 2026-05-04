@@ -1,4 +1,5 @@
-from app.services.llm_service import summarize_papers
+from app.services.llm_service import call_llm
+
 
 def analyze(topic, papers):
     print("🤖 Analyzer Agent working...")
@@ -14,15 +15,15 @@ You are a research analyst.
 Topic: {topic}
 
 Find:
-- Conflicting ideas
-- Gaps in research
-- Future opportunities
+- Key patterns
+- Trends across papers
+- Agreements vs disagreements
 
 Papers:
 {content}
 """
 
     try:
-        return summarize_papers(papers, topic)  # reuse LLM
+        return call_llm(prompt)
     except Exception as e:
         return f"Analysis error: {str(e)}"

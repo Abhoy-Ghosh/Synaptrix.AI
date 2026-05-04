@@ -1,11 +1,23 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from typing import Literal
+from contextlib import asynccontextmanager
 
-from app.ai_engine.pipeline import run_pipeline
+from app.ai_engine.pipeline import run_pipeline, warmup_model
 from app.feedback.feedback_store import add_feedback
-from app.feedback.paper_feedback import add_paper_feedback  # ✅ NEW
+from app.feedback.paper_feedback import add_paper_feedback
 
-app = FastAPI()
+
+# -----------------------------
+# STARTUP
+# -----------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    warmup_model()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 # -----------------------------
@@ -13,20 +25,21 @@ app = FastAPI()
 # -----------------------------
 class Query(BaseModel):
     topic: str
+    mode: Literal["fast", "parallel", "research"] | None = None   # 🔥 NEW
 
 
 class Feedback(BaseModel):
     topic: str
-    feedback: str  # "good" or "bad"
+    feedback: Literal["good","bad"]  # "good" or "bad"
 
 
-class PaperFeedback(BaseModel):   # ✅ NEW
+class PaperFeedback(BaseModel):
     title: str
     score: int  # +1 or -1
 
 
 # -----------------------------
-# ROOT CHECK
+# ROOT
 # -----------------------------
 @app.get("/")
 def root():
@@ -37,9 +50,9 @@ def root():
 # MAIN PIPELINE
 # -----------------------------
 @app.post("/generate")
-def generate(query: Query):
+async def generate(query: Query):
     print("🔥 PIPELINE RUNNING")
-    return run_pipeline(query.topic)
+    return await run_pipeline(query.topic, query.mode)  # 🔥 UPDATED
 
 
 # -----------------------------
@@ -60,7 +73,7 @@ def submit_feedback(data: Feedback):
 
 
 # -----------------------------
-# PAPER-LEVEL FEEDBACK (🔥 IMPORTANT)
+# PAPER FEEDBACK
 # -----------------------------
 @app.post("/paper-feedback")
 def submit_paper_feedback(data: PaperFeedback):

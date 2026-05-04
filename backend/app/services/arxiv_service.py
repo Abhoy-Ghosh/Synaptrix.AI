@@ -2,7 +2,7 @@ import requests
 import xml.etree.ElementTree as ET
 import time
 
-def fetch_arxiv_papers(query: str, max_results: int = 10):
+def fetch_arxiv_papers(query: str, max_results: int = 5):
 
     time.sleep(1)  # ✅ avoid rate limit
 

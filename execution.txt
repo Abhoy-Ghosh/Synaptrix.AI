@@ -150,3 +150,20 @@ summarize → analyze → similarity → gaps (one by one)
 ALL agents run together ⚡
 
 👉 Expect ~2–3x speed improvement
+
+
+| Mode               | Calls     | Quality | Speed | Cost  |
+| ------------------ | --------- | ------- | ----- | ----- |
+| Sequential         | 3 chained | ⭐⭐⭐⭐⭐   | ❌     | ❌     |
+| Parallel (current) | 3 async   | ⭐⭐⭐     | ⭐⭐⭐⭐  | ❌     |
+| Combined           | 1 call    | ⭐⭐      | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+
+
+Query
+ → Feedback-aware cache
+ → FAISS search
+ → Dedup + filter
+ → Hybrid ranking (your strong part)
+ → MODE SELECTION 🧠
+ → LLM execution (adaptive)
+ → Output
