@@ -1,19 +1,42 @@
 import requests
+import os
+import time
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_KEY = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
+
+BASE_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 
 
-def fetch_semantic_papers(query, limit=10):
+def fetch_semantic_papers(query, max_results=5, retry=2):
+    print("📚 Fetching from Semantic Scholar...")
 
-    url = "https://api.semanticscholar.org/graph/v1/paper/search"
+    if not API_KEY:
+        print("❌ Missing Semantic Scholar API key")
+        return []
+
+    headers = {
+        "x-api-key": API_KEY
+    }
 
     params = {
         "query": query,
-        "limit": limit,
+        "limit": max_results,
         "fields": "title,abstract,year,citationCount"
     }
 
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(BASE_URL, headers=headers, params=params, timeout=10)
 
+        # 🔁 Handle rate limit
+        if response.status_code == 429 and retry > 0:
+            print("⏳ Rate limited. Retrying...")
+            time.sleep(2)
+            return fetch_semantic_papers(query, max_results, retry - 1)
+
+        # ❌ Any other error
         if response.status_code != 200:
             print("❌ Semantic Scholar API error:", response.status_code)
             return []
@@ -22,14 +45,23 @@ def fetch_semantic_papers(query, limit=10):
 
         papers = []
 
-        for p in data.get("data", []):
+        for paper in data.get("data", []):
+            title = paper.get("title")
+            abstract = paper.get("abstract")
+
+            # Skip bad entries
+            if not title or not abstract:
+                continue
+
             papers.append({
-                "title": p.get("title", ""),
-                "abstract": p.get("abstract", "") or "",
-                "year": p.get("year", 0),
-                "citations": p.get("citationCount", 0),
+                "title": title.strip(),
+                "abstract": abstract.strip(),
+                "year": paper.get("year", 2020),
+                "citations": paper.get("citationCount", 0),
                 "source": "semantic"
             })
+
+        print(f"✅ Semantic Scholar returned {len(papers)} papers")
 
         return papers
 
