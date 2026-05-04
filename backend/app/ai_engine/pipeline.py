@@ -3,6 +3,7 @@ from app.agents.summarizer import summarize
 from app.agents.analyzer import analyze
 from app.agents.similarity import find_similarities
 from app.agents.gap_finder import find_gaps
+from app.agents.insight_extractor import extract_insights
 
 from app.cache.cache import get_cached_result, set_cached_result, delete_cached_result
 from app.retrieval.vector_store import add_to_index, search_index
@@ -12,7 +13,7 @@ from app.feedback.paper_feedback import get_paper_score
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import asyncio
-
+import time
 
 # -----------------------------
 # NORMALIZE
@@ -30,7 +31,9 @@ def get_model():
     global model
     if model is None:
         print("🔥 Loading embedding model...")
+        start = time.time()
         model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
+        print("Model load time:", time.time() - start)
     return model
 
 
@@ -102,11 +105,17 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
         feedback = min(get_paper_score(paper["title"]), 1.0) * 0.15
         title_boost = 0.1 if topic.lower() in paper["title"].lower() else 0
         phrase_boost = 0.1 if topic.lower() in paper["abstract"].lower() else 0
+        citation_boost = min(paper.get("citations", 0) / 1000, 1.0) * 0.1
+        recency_boost = (2025 - paper.get("year", 2020)) * -0.02
+        source_boost = 0.05 if paper.get("source") == "semantic" else 0
 
         final = (
-            0.6 * semantic +
-            0.25 * keyword +
+            0.5 * semantic +
+            0.2 * keyword +
             0.15 * feedback +
+            0.1 * citation_boost +
+            source_boost +
+            recency_boost +
             title_boost +
             phrase_boost
         )
@@ -207,13 +216,37 @@ async def run_pipeline(topic: str, user_mode: str = None):
             embeddings
         )[:5]
 
+        print("🧠 Extracting insights...")
+
+        for paper in top_papers:
+            try:
+                insights = extract_insights(paper["abstract"])
+                paper["insights"] = insights
+            except Exception as e:
+                print("⚠️ Insight extraction failed:", str(e))
+                paper["insights"] = {
+                    "points": [],
+                    "keywords": [],
+                    "why": "Not available"
+                }
+
     else:
         print("🌐 Fetching fresh data")
 
         papers = retrieve_papers(topic)
 
-        if not papers:
-            return {"error": "No papers found"}
+        if not papers or len(papers) < 2:
+            print("⚠️ Weak retrieval result")
+
+            return {
+                "topic": topic,
+                "top_papers": [],
+                "summary": "No sufficient research papers found.",
+                "analysis": "Try a more specific query.",
+                "similarities": [],
+                "gaps": [],
+                "mode_used": "fallback"
+            }
 
         papers = deduplicate(papers)
 
@@ -290,4 +323,4 @@ async def run_pipeline(topic: str, user_mode: str = None):
     # -----------------------------
     set_cached_result(topic, result)
 
-    return resulti 
+    return result

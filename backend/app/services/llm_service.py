@@ -50,7 +50,7 @@ def call_llm(prompt):
             model=MODEL,
             contents=prompt
         )
-        result_ = response.text if response.text else "No output"
+        result = response.text if response.text else "No output"
     except Exception as e:
         msg = str(e)
         if "429" in msg or "quota" in msg.lower():

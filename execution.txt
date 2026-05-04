@@ -167,3 +167,9 @@ Query
  → MODE SELECTION 🧠
  → LLM execution (adaptive)
  → Output
+
+
+Fault-tolerant
+Multi-source retrieval
+Stable demo pipeline
+Correct ranking
