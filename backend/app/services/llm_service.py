@@ -122,7 +122,7 @@ def call_llm(prompt):
         print("✅ Gemini success")
 
     except Exception as e:
-        print("⚠️ Gemini failed → switching to Groq:", str(e))
+        print("⚠️ Gemini failed → switching to Groq:")
 
         # -----------------------------
         # GROQ FALLBACK

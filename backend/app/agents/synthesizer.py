@@ -1,78 +1,76 @@
 from app.services.llm_service import call_llm
+from app.agents.clusterer import cluster_papers
 
 
 def synthesize(topic, papers):
-    print("🧠 Cross-paper synthesis working...")
+    print("🧠 Cluster-based synthesis working...")
 
     if not papers:
-        return "No data available for synthesis."
+        return "No data available"
 
     # -----------------------------
-    # STEP 1: COLLECT ALL POINTS
+    # STEP 1: CLUSTER
     # -----------------------------
-    all_points = []
-    all_keywords = []
+    clusters = cluster_papers(papers)
 
-    for p in papers:
-        insights = p.get("insights", {})
-
-        points = insights.get("points", [])
-        keywords = insights.get("keywords", [])
-
-        all_points.extend(points)
-        all_keywords.extend(keywords)
+    cluster_summaries = []
 
     # -----------------------------
-    # STEP 2: SIMPLE DEDUPLICATION
+    # STEP 2: SUMMARIZE EACH CLUSTER
     # -----------------------------
-    unique_points = list(set([p.strip().lower() for p in all_points if p]))
-    unique_keywords = list(set([k.strip().lower() for k in all_keywords if k]))
+    for idx, cluster in enumerate(clusters):
+        points = []
 
-    # limit size (important for LLM)
-    unique_points = unique_points[:20]
-    unique_keywords = unique_keywords[:20]
+        for p in cluster:
+            insights = p.get("insights", {})
+            points.extend(insights.get("points", []))
+
+        unique_points = list(set(points))[:10]
+
+        cluster_summaries.append({
+            "cluster_id": idx,
+            "size": len(cluster),
+            "points": unique_points
+        })
 
     # -----------------------------
-    # STEP 3: BUILD STRUCTURED INPUT
+    # STEP 3: BUILD INPUT
     # -----------------------------
-    content = f"""
-Key Ideas Across Papers:
-- {"; ".join(unique_points[:15])}
+    content = ""
 
-Common Keywords:
-- {", ".join(unique_keywords[:15])}
+    for c in cluster_summaries:
+        content += f"""
+Cluster {c['cluster_id']} (size: {c['size']}):
+- {'; '.join(c['points'])}
 """
 
+    content = content[:3000]
+
     # -----------------------------
-    # STEP 4: PROMPT (SMART)
+    # STEP 4: FINAL SYNTHESIS
     # -----------------------------
     prompt = f"""
 You are an expert research synthesizer.
 
 Topic: {topic}
 
-Given aggregated insights from multiple papers:
+Clusters represent groups of similar papers.
 
 {content}
 
 Generate:
 
-1. Core Consensus (what most papers agree on)
-2. Key Differences (where papers diverge)
-3. Important Concepts (central ideas)
-4. Emerging Trends
-5. Final Synthesis (2-3 sentences)
+1. Cluster-wise Insights
+2. Differences Between Clusters
+3. Overall Trends
+4. Final Unified Understanding
 
 Rules:
-- Do NOT repeat same points
-- Combine ideas intelligently
-- Be concise
-- Focus on cross-paper understanding
+- Compare clusters (not individual points)
+- Highlight contradictions between clusters
+- Avoid repetition
 """
 
-    # -----------------------------
-    # STEP 5: LLM CALL
-    # -----------------------------
     try:
         result = call_llm(prompt)
 
@@ -83,4 +81,4 @@ Rules:
 
     except Exception as e:
         print("⚠️ Synthesis error:", str(e))
-        return "Synthesis temporarily unavailable"
+        return "Synthesis failed"
