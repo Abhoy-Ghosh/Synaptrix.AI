@@ -4,7 +4,9 @@ from app.services.llm_service import call_llm
 
 def extract_insights(abstract: str):
 
-    # 🔒 Guard clause
+    # -----------------------------
+    # GUARD CLAUSE
+    # -----------------------------
     if not abstract or len(abstract) < 50:
         return {
             "points": [],
@@ -12,6 +14,9 @@ def extract_insights(abstract: str):
             "why": "Insufficient abstract"
         }
 
+    # -----------------------------
+    # PROMPT
+    # -----------------------------
     prompt = f"""
 Return ONLY valid JSON. No explanation. No text outside JSON.
 
@@ -31,72 +36,96 @@ Abstract:
 {abstract}
 """
 
-    try:
-        response = call_llm(prompt)
+    # -----------------------------
+    # RETRY LOOP (CRITICAL)
+    # -----------------------------
+    response = None
 
-        # -----------------------------
-        # 🔥 HARD VALIDATION
-        # -----------------------------
-        if not response or len(response.strip()) < 10:
-            raise ValueError("Empty or invalid LLM response")
-
-        if "temporarily unavailable" in response.lower():
-            raise ValueError("LLM unavailable")
-
-        response = response.strip()
-
-        # -----------------------------
-        # STEP 1: Try direct JSON
-        # -----------------------------
+    for _ in range(2):
         try:
-            data = json.loads(response)
+            response = call_llm(prompt)
 
-        # -----------------------------
-        # STEP 2: Extract JSON safely
-        # -----------------------------
-        except:
-            start = response.find("{")
-            end = response.rfind("}") + 1
+            if (
+                response
+                and len(response.strip()) > 10
+                and "temporarily unavailable" not in response.lower()
+            ):
+                break
 
-            if start == -1 or end == -1:
-                raise ValueError("No JSON found in response")
+        except Exception as e:
+            print("⚠️ LLM call failed:", str(e))
 
+    # -----------------------------
+    # FINAL CHECK BEFORE PARSE
+    # -----------------------------
+    if not response or len(response.strip()) < 10:
+        return {
+            "points": [abstract[:120] + "..."],
+            "keywords": [],
+            "why": "Fallback extraction"
+        }
+
+    response = response.strip()
+
+    # -----------------------------
+    # PARSE JSON (SAFE)
+    # -----------------------------
+    try:
+        data = json.loads(response)
+
+    except:
+        # try extracting JSON block
+        start = response.find("{")
+        end = response.rfind("}") + 1
+
+        if start == -1 or end == -1:
+            return {
+                "points": [abstract[:120] + "..."],
+                "keywords": [],
+                "why": "Fallback extraction"
+            }
+
+        try:
             json_str = response[start:end]
             data = json.loads(json_str)
+        except:
+            return {
+                "points": [abstract[:120] + "..."],
+                "keywords": [],
+                "why": "Fallback extraction"
+            }
 
-        # -----------------------------
-        # STEP 3: Normalize fields
-        # -----------------------------
-        points = data.get("points") or data.get("bullet_points") or []
-        keywords = data.get("keywords") or data.get("tags") or []
-        why = data.get("why") or data.get("importance") or ""
+    # -----------------------------
+    # NORMALIZE FIELDS
+    # -----------------------------
+    points = data.get("points") or data.get("bullet_points") or []
+    keywords = data.get("keywords") or data.get("tags") or []
+    why = data.get("why") or data.get("importance") or ""
 
-        # -----------------------------
-        # STEP 4: Force correct types
-        # -----------------------------
-        if not isinstance(points, list):
-            points = [str(points)]
+    # -----------------------------
+    # FORCE TYPES
+    # -----------------------------
+    if not isinstance(points, list):
+        points = [str(points)]
 
-        if not isinstance(keywords, list):
-            keywords = [str(keywords)]
+    if not isinstance(keywords, list):
+        keywords = [str(keywords)]
 
-        if not isinstance(why, str):
-            why = str(why)
+    if not isinstance(why, str):
+        why = str(why)
 
-        # -----------------------------
-        # STEP 5: FINAL CLEANUP
-        # -----------------------------
-        return {
-            "points": [p.strip() for p in points if p][:6],
-            "keywords": [k.strip() for k in keywords if k][:10],
-            "why": why.strip() if why else "Not available"
-        }
+    # -----------------------------
+    # FINAL CLEANUP
+    # -----------------------------
+    points = [p.strip() for p in points if p][:6]
+    keywords = [k.strip() for k in keywords if k][:10]
+    why = why.strip() if why else "Not available"
 
-    except Exception as e:
-        print("⚠️ Insight extraction failed:", str(e))
-
-        return {
-            "points": [],
-            "keywords": [],
-            "why": "Could not extract insights"
-        }
+    # -----------------------------
+    # FINAL RETURN
+    # -----------------------------
+    return {
+        "points": points if points else [abstract[:120] + "..."],
+        "keywords": keywords,
+        "why": why
+    }

@@ -3,6 +3,7 @@ from google import genai
 import os
 import json
 import time
+import requests
 
 load_dotenv()
 
@@ -42,16 +43,16 @@ def save_cache(data):
 
 
 # -----------------------------
-# GROQ FALLBACK (SAFE)
+# GROQ FALLBACK (FIXED)
 # -----------------------------
 def groq_llm(prompt):
-    import requests
-
     if not GROQ_API_KEY:
         print("❌ GROQ API key missing")
-        return "AI temporarily unavailable"
+        return None
 
     try:
+        print("🚀 CALLING GROQ...")
+
         response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={
@@ -69,31 +70,25 @@ def groq_llm(prompt):
 
         if response.status_code != 200:
             print("❌ Groq API error:", response.status_code, response.text)
-            return ""
+            return None
 
         data = response.json()
 
-        choices = data.get("choices")
-        if not choices:
-            print("❌ Groq malformed response:", data)
-            return ""
-
-        message = choices[0].get("message", {})
-        content = message.get("content")
+        content = data.get("choices", [{}])[0].get("message", {}).get("content")
 
         if not content:
-            print("❌ Groq empty content:", data)
-            return ""
+            print("❌ Groq empty response")
+            return None
 
-        return content
+        return content.strip()
 
     except Exception as e:
-        print("❌ Groq error:", str(e))
-        return ""
+        print("❌ Groq exception:", str(e))
+        return None
 
 
 # -----------------------------
-# MAIN LLM CALL (ROBUST)
+# MAIN LLM CALL (STABLE)
 # -----------------------------
 def call_llm(prompt):
     cache = load_cache()
@@ -108,7 +103,7 @@ def call_llm(prompt):
             print("⚡ LLM CACHE HIT")
             return entry["data"]
 
-    result = ""
+    result = None
 
     # -----------------------------
     # TRY GEMINI
@@ -118,23 +113,29 @@ def call_llm(prompt):
             model=MODEL,
             contents=prompt
         )
-        result = response.text if response.text else ""
 
-        if not result.strip():
+        result = response.text.strip() if response.text else None
+
+        if not result:
             raise ValueError("Empty Gemini response")
+
+        print("✅ Gemini success")
 
     except Exception as e:
         print("⚠️ Gemini failed → switching to Groq:", str(e))
 
         # -----------------------------
-        # ALWAYS FALLBACK
+        # GROQ FALLBACK
         # -----------------------------
         result = groq_llm(prompt)
+
+        if result:
+            print("✅ Groq success")
 
     # -----------------------------
     # FINAL SAFETY
     # -----------------------------
-    if not result or len(result.strip()) < 5:
+    if not result:
         print("❌ Both Gemini & Groq failed")
         result = "AI temporarily unavailable"
 

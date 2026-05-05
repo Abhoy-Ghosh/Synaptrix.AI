@@ -1,3 +1,8 @@
+import asyncio
+import time
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
 from app.agents.retriever import retrieve_papers
 from app.agents.summarizer import summarize
 from app.agents.analyzer import analyze
@@ -10,11 +15,6 @@ from app.retrieval.vector_store import add_to_index, search_index
 from app.feedback.feedback_store import get_feedback
 from app.feedback.paper_feedback import get_paper_score
 
-from sentence_transformers import SentenceTransformer
-import numpy as np
-import asyncio
-import time
-
 
 # -----------------------------
 # NORMALIZE
@@ -24,7 +24,7 @@ def normalize_topic(topic):
 
 
 # -----------------------------
-# MODEL (LAZY LOAD)
+# MODEL
 # -----------------------------
 _model = None
 
@@ -59,10 +59,16 @@ def deduplicate(papers):
 
 def filter_relevant(papers, topic):
     topic_words = topic.lower().split()
-    return [
-        p for p in papers
-        if any(w in p.get("abstract", "").lower() for w in topic_words)
-    ]
+    filtered = []
+
+    for p in papers:
+        text = (p.get("title","") + " " + p.get("abstract","")).lower()
+        match_count = sum(1 for w in topic_words if w in text)
+
+        if match_count >= max(1, len(topic_words)//2):
+            filtered.append(p)
+
+    return filtered
 
 
 def keyword_score(text, topic):
@@ -110,14 +116,17 @@ def choose_mode(topic, papers, user_mode=None):
     if user_mode in ["fast", "parallel", "research"]:
         return user_mode
 
-    if len(topic.split()) > 5 or len(papers) < 3:
+    if len(papers) < 3:
+        return "fast"
+
+    if len(topic.split()) > 5:
         return "research"
 
     return "parallel"
 
 
 # -----------------------------
-# PARALLEL MODE (SAFE)
+# PARALLEL MODE
 # -----------------------------
 async def run_parallel(topic, papers):
     print("⚡ Parallel mode")
@@ -128,56 +137,40 @@ async def run_parallel(topic, papers):
     analysis_task = loop.run_in_executor(None, analyze, topic, papers)
     gaps_task = loop.run_in_executor(None, find_gaps, topic, papers)
 
-    results = await asyncio.gather(
+    summary, analysis, gaps = await asyncio.gather(
         summary_task,
         analysis_task,
         gaps_task,
         return_exceptions=True
     )
 
-    summary, analysis, gaps = results
-
     if isinstance(summary, Exception):
-        print("⚠️ Summary failed:", summary)
         summary = "Summary not available"
 
     if isinstance(analysis, Exception):
-        print("⚠️ Analysis failed:", analysis)
         analysis = "Analysis not available"
 
     if isinstance(gaps, Exception):
-        print("⚠️ Gaps failed:", gaps)
         gaps = "Gap analysis not available"
 
     return summary, analysis, gaps
 
 
 # -----------------------------
-# SEQUENTIAL MODE (SAFE)
+# SEQUENTIAL MODE
 # -----------------------------
-def _safe(text, fallback):
-    if not text or len(str(text).strip()) < 20:
-        return fallback
-    return text
-
-
 async def run_sequential(topic, papers):
-    print("🧠 Sequential reasoning mode")
+    print("🧠 Sequential research mode")
 
-    summary = summarize(topic, papers)
-    summary = _safe(summary, "Summary not available")
+    summary = safe_text(summarize(topic, papers))
 
-    analysis = analyze(
-        f"{topic}\n\nSummary:\n{summary}",
-        papers
+    analysis = safe_text(
+        analyze(f"{topic}\n\nSummary:\n{summary}", papers)
     )
-    analysis = _safe(analysis, "Analysis not available")
 
-    gaps = find_gaps(
-        f"{topic}\n\nSummary:\n{summary}\n\nAnalysis:\n{analysis}",
-        papers
+    gaps = safe_text(
+        find_gaps(f"{topic}\n\nSummary:\n{summary}\n\nAnalysis:\n{analysis}", papers)
     )
-    gaps = _safe(gaps, "Gap analysis not available")
 
     return summary, analysis, gaps
 
@@ -212,38 +205,48 @@ async def run_pipeline(topic: str, user_mode: str = None):
     query_embedding = emb_model.encode([topic])[0]
 
     # -----------------------------
-    # SEARCH (FAISS)
+    # FAISS SEARCH
     # -----------------------------
     faiss_results = search_index(query_embedding, k=15)
     faiss_results = deduplicate(faiss_results)
     faiss_results = filter_relevant(faiss_results, topic)
 
+    # -----------------------------
+    # FETCH IF NEEDED
+    # -----------------------------
     if len(faiss_results) < 3:
         print("🌐 Fetching fresh data")
 
         papers = retrieve_papers(topic)
-        if not papers:
-            return {"error": "No papers found"}
-
         papers = deduplicate(papers)
 
-        embeddings = emb_model.encode([p["abstract"] for p in papers])
-        add_to_index(embeddings, papers)
+        if papers:
+            embeddings = emb_model.encode([p["abstract"] for p in papers])
+            add_to_index(embeddings, papers)
 
-        faiss_results = search_index(query_embedding, k=15)
+            faiss_results = search_index(query_embedding, k=15)
+            faiss_results = filter_relevant(faiss_results, topic)
 
     # -----------------------------
     # RANK
     # -----------------------------
-    embeddings = emb_model.encode([p["abstract"] for p in faiss_results])
+    if not faiss_results:
+        print("⚠️ No strong FAISS results, continuing with fallback papers")
+        faiss_results = papers if 'papers' in locals() else []
+
+    embeddings = emb_model.encode([p["abstract"] for p in faiss_results]) if faiss_results else []
+
     top_papers = rerank_hybrid(
         faiss_results, topic, query_embedding, embeddings
-    )[:5]
+    )[:5] if faiss_results else []
+
+    print("DEBUG: top_papers count =", len(top_papers))
 
     # -----------------------------
-    # INSIGHTS (ALWAYS)
+    # INSIGHTS (ALWAYS RUN)
     # -----------------------------
     print("🧠 Extracting insights...")
+
     for p in top_papers:
         p["insights"] = extract_insights(p.get("abstract", ""))
 
@@ -274,7 +277,7 @@ async def run_pipeline(topic: str, user_mode: str = None):
     similarities = find_similarities(top_papers)
 
     # -----------------------------
-    # FINAL OUTPUT
+    # OUTPUT
     # -----------------------------
     result = {
         "topic": topic,
