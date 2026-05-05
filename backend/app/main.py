@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Literal
 from contextlib import asynccontextmanager
+import asyncio
 
 from app.ai_engine.pipeline import run_pipeline, warmup_model
 from app.feedback.feedback_store import add_feedback
@@ -13,7 +14,7 @@ from app.feedback.paper_feedback import add_paper_feedback
 # -----------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    warmup_model()
+    asyncio.create_task(asyncio.to_thread(warmup_model))
     yield
 
 
@@ -25,17 +26,17 @@ app = FastAPI(lifespan=lifespan)
 # -----------------------------
 class Query(BaseModel):
     topic: str
-    mode: Literal["fast", "parallel", "research"] | None = None   # 🔥 NEW
+    mode: Literal["fast", "parallel", "research"] | None = None
 
 
 class Feedback(BaseModel):
     topic: str
-    feedback: Literal["good","bad"]  # "good" or "bad"
+    feedback: Literal["good", "bad"]
 
 
 class PaperFeedback(BaseModel):
     title: str
-    score: int  # +1 or -1
+    score: int
 
 
 # -----------------------------
@@ -52,7 +53,23 @@ def root():
 @app.post("/generate")
 async def generate(query: Query):
     print("🔥 PIPELINE RUNNING")
-    return await run_pipeline(query.topic, query.mode)  # 🔥 UPDATED
+
+    if not query.topic or len(query.topic.strip()) < 3:
+        return {"error": "Invalid topic"}
+
+    try:
+        result = await asyncio.wait_for(
+            run_pipeline(query.topic, query.mode),
+            timeout=60
+        )
+        return result
+
+    except asyncio.TimeoutError:
+        return {"error": "Request timed out"}
+
+    except Exception as e:
+        print("❌ Pipeline error:", str(e))
+        return {"error": "Pipeline failed"}
 
 
 # -----------------------------
@@ -60,9 +77,6 @@ async def generate(query: Query):
 # -----------------------------
 @app.post("/feedback")
 def submit_feedback(data: Feedback):
-    if data.feedback not in ["good", "bad"]:
-        return {"error": "feedback must be 'good' or 'bad'"}
-
     add_feedback(data.topic, data.feedback)
 
     return {

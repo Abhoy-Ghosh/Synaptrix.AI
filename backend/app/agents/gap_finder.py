@@ -10,28 +10,31 @@ def find_gaps(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:200]}"
         for p in papers
-    ])[:2000]  # 🔥 limit prompt size
+    ])[:2000]
 
     prompt = f"""
 You are a research strategist.
 
 Topic: {topic}
 
-Analyze the papers and identify:
+Return output STRICTLY in this format:
 
 Research Gaps:
-- Missing or under-explored areas
+- ...
+- ...
 
 Future Directions:
-- Promising areas for future research
+- ...
+- ...
 
 Limitations:
-- Common weaknesses or constraints in current work
+- ...
+- ...
 
 Rules:
 - Use bullet points
-- Keep it concise
 - Max 5 points per section
+- No extra text outside sections
 
 Papers:
 {content}
@@ -40,11 +43,25 @@ Papers:
     try:
         result = call_llm(prompt)
 
-        # 🔥 basic validation
         if not result or len(result.strip()) < 20:
             return "Gap analysis not available"
 
-        return result
+        # 🔥 STRUCTURE VALIDATION
+        if "Research Gaps" not in result:
+            print("⚠️ Gap format issue → using fallback")
+
+            return f"""
+Research Gaps:
+- Could not clearly identify gaps
+
+Future Directions:
+- Further research needed
+
+Limitations:
+- Current literature insufficient for detailed analysis
+"""
+
+        return result.strip()
 
     except Exception as e:
         print("⚠️ Gap Finder error:", str(e))

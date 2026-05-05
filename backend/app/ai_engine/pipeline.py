@@ -15,6 +15,7 @@ import numpy as np
 import asyncio
 import time
 
+
 # -----------------------------
 # NORMALIZE
 # -----------------------------
@@ -23,51 +24,47 @@ def normalize_topic(topic):
 
 
 # -----------------------------
-# MODEL
+# MODEL (LAZY LOAD)
 # -----------------------------
-model = None
+_model = None
 
 def get_model():
-    global model
-    if model is None:
+    global _model
+    if _model is None:
         print("🔥 Loading embedding model...")
         start = time.time()
-        model = SentenceTransformer('all-mpnet-base-v2', device='cpu')
+        _model = SentenceTransformer('all-mpnet-base-v2')
         print("Model load time:", time.time() - start)
-    return model
+    return _model
 
 
-# -----------------------------
-# WARMUP
-# -----------------------------
 def warmup_model():
     get_model()
     print("✅ Embedding model warm")
 
 
 # -----------------------------
-# DEDUP
+# HELPERS
 # -----------------------------
 def deduplicate(papers):
     seen = set()
     unique = []
     for p in papers:
-        if p["title"] not in seen:
-            seen.add(p["title"])
+        title = p.get("title", "").lower()
+        if title and title not in seen:
+            seen.add(title)
             unique.append(p)
     return unique
 
 
-# -----------------------------
-# QUALITY CHECK
-# -----------------------------
-def is_good_result(results):
-    return len(results) >= 3
+def filter_relevant(papers, topic):
+    topic_words = topic.lower().split()
+    return [
+        p for p in papers
+        if any(w in p.get("abstract", "").lower() for w in topic_words)
+    ]
 
 
-# -----------------------------
-# KEYWORD SCORE
-# -----------------------------
 def keyword_score(text, topic):
     text = text.lower()
     topic_words = topic.lower().split()
@@ -75,24 +72,17 @@ def keyword_score(text, topic):
     return score / max(len(topic_words), 1)
 
 
-# -----------------------------
-# FILTER
-# -----------------------------
-def filter_relevant(papers, topic):
-    topic_words = topic.lower().split()
-    filtered = []
-    for p in papers:
-        text = p["abstract"].lower()
-        if any(word in text for word in topic_words):
-            filtered.append(p)
-    return filtered
+def safe_text(x, fallback="Not available"):
+    if not x or len(str(x).strip()) < 5:
+        return fallback
+    return x
 
 
 # -----------------------------
 # HYBRID RANKING
 # -----------------------------
 def rerank_hybrid(papers, topic, query_embedding, embeddings):
-    final_scores = []
+    scores = []
 
     for i, paper in enumerate(papers):
         emb = embeddings[i]
@@ -103,62 +93,93 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
 
         keyword = keyword_score(paper["abstract"], topic)
         feedback = min(get_paper_score(paper["title"]), 1.0) * 0.15
-        title_boost = 0.1 if topic.lower() in paper["title"].lower() else 0
-        phrase_boost = 0.1 if topic.lower() in paper["abstract"].lower() else 0
-        citation_boost = min(paper.get("citations", 0) / 1000, 1.0) * 0.1
-        recency_boost = (2025 - paper.get("year", 2020)) * -0.02
-        source_boost = 0.05 if paper.get("source") == "semantic" else 0
+        citation = min(paper.get("citations", 0) / 1000, 1.0) * 0.1
 
-        final = (
-            0.5 * semantic +
-            0.2 * keyword +
-            0.15 * feedback +
-            0.1 * citation_boost +
-            source_boost +
-            recency_boost +
-            title_boost +
-            phrase_boost
-        )
+        final = 0.6 * semantic + 0.25 * keyword + feedback + citation
 
-        final_scores.append((final, paper))
+        scores.append((final, paper))
 
-    final_scores.sort(key=lambda x: x[0], reverse=True)
-    return [p for _, p in final_scores]
+    scores.sort(key=lambda x: x[0], reverse=True)
+    return [p for _, p in scores]
 
 
 # -----------------------------
-# MODE SELECTION 🧠
+# MODE SELECTION
 # -----------------------------
 def choose_mode(topic, papers, user_mode=None):
-
     if user_mode in ["fast", "parallel", "research"]:
         return user_mode
 
-    # auto mode
-    if len(topic.split()) > 5:
-        return "research"
-
-    if len(papers) < 3:
+    if len(topic.split()) > 5 or len(papers) < 3:
         return "research"
 
     return "parallel"
 
 
 # -----------------------------
-# ASYNC AGENTS ⚡ (UNCHANGED)
+# PARALLEL MODE (SAFE)
 # -----------------------------
-async def run_async_agents(topic, top_papers):
-    loop = asyncio.get_event_loop()
+async def run_parallel(topic, papers):
+    print("⚡ Parallel mode")
 
-    summary_task = loop.run_in_executor(None, summarize, topic, top_papers)
-    analysis_task = loop.run_in_executor(None, analyze, topic, top_papers)
-    sim_task = loop.run_in_executor(None, find_similarities, top_papers)
-    gap_task = loop.run_in_executor(None, find_gaps, topic, top_papers)
+    loop = asyncio.get_running_loop()
 
-    return await asyncio.wait_for(
-        asyncio.gather(summary_task, analysis_task, sim_task, gap_task),
-        timeout=60.0
+    summary_task = loop.run_in_executor(None, summarize, topic, papers)
+    analysis_task = loop.run_in_executor(None, analyze, topic, papers)
+    gaps_task = loop.run_in_executor(None, find_gaps, topic, papers)
+
+    results = await asyncio.gather(
+        summary_task,
+        analysis_task,
+        gaps_task,
+        return_exceptions=True
     )
+
+    summary, analysis, gaps = results
+
+    if isinstance(summary, Exception):
+        print("⚠️ Summary failed:", summary)
+        summary = "Summary not available"
+
+    if isinstance(analysis, Exception):
+        print("⚠️ Analysis failed:", analysis)
+        analysis = "Analysis not available"
+
+    if isinstance(gaps, Exception):
+        print("⚠️ Gaps failed:", gaps)
+        gaps = "Gap analysis not available"
+
+    return summary, analysis, gaps
+
+
+# -----------------------------
+# SEQUENTIAL MODE (SAFE)
+# -----------------------------
+def _safe(text, fallback):
+    if not text or len(str(text).strip()) < 20:
+        return fallback
+    return text
+
+
+async def run_sequential(topic, papers):
+    print("🧠 Sequential reasoning mode")
+
+    summary = summarize(topic, papers)
+    summary = _safe(summary, "Summary not available")
+
+    analysis = analyze(
+        f"{topic}\n\nSummary:\n{summary}",
+        papers
+    )
+    analysis = _safe(analysis, "Analysis not available")
+
+    gaps = find_gaps(
+        f"{topic}\n\nSummary:\n{summary}\n\nAnalysis:\n{analysis}",
+        papers
+    )
+    gaps = _safe(gaps, "Gap analysis not available")
+
+    return summary, analysis, gaps
 
 
 # -----------------------------
@@ -172,155 +193,99 @@ async def run_pipeline(topic: str, user_mode: str = None):
     emb_model = get_model()
 
     # -----------------------------
-    # FEEDBACK
+    # CACHE
     # -----------------------------
     feedback = get_feedback(topic)
 
     if feedback == "bad":
-        print("⚠️ Clearing cache due to bad feedback")
         delete_cached_result(topic)
 
-    # -----------------------------
-    # CACHE
-    # -----------------------------
-    cached = get_cached_result(topic)
+    cached = get_cached_result(topic, user_mode)
 
     if cached and feedback != "bad":
-        print("⚡ CACHE HIT (VALID)")
+        print("⚡ CACHE HIT")
         return cached
-    elif cached:
-        print("⚠️ Cache ignored due to BAD feedback")
 
     # -----------------------------
-    # QUERY EMBEDDING
+    # EMBEDDING
     # -----------------------------
-    query_embedding = emb_model.encode([topic])[0].astype("float32")
+    query_embedding = emb_model.encode([topic])[0]
 
     # -----------------------------
-    # FAISS SEARCH
+    # SEARCH (FAISS)
     # -----------------------------
     faiss_results = search_index(query_embedding, k=15)
     faiss_results = deduplicate(faiss_results)
     faiss_results = filter_relevant(faiss_results, topic)
 
-    if is_good_result(faiss_results) and feedback != "bad":
-        print("⚡ Using FAISS")
-
-        texts = [p["abstract"][:500] for p in faiss_results]
-        embeddings = emb_model.encode(texts)
-
-        top_papers = rerank_hybrid(
-            faiss_results,
-            topic,
-            query_embedding,
-            embeddings
-        )[:5]
-
-        print("🧠 Extracting insights...")
-
-        for paper in top_papers:
-            try:
-                insights = extract_insights(paper["abstract"])
-                paper["insights"] = insights
-            except Exception as e:
-                print("⚠️ Insight extraction failed:", str(e))
-                paper["insights"] = {
-                    "points": [],
-                    "keywords": [],
-                    "why": "Not available"
-                }
-
-    else:
+    if len(faiss_results) < 3:
         print("🌐 Fetching fresh data")
 
         papers = retrieve_papers(topic)
-
-        if not papers or len(papers) < 2:
-            print("⚠️ Weak retrieval result")
-
-            return {
-                "topic": topic,
-                "top_papers": [],
-                "summary": "No sufficient research papers found.",
-                "analysis": "Try a more specific query.",
-                "similarities": [],
-                "gaps": [],
-                "mode_used": "fallback"
-            }
+        if not papers:
+            return {"error": "No papers found"}
 
         papers = deduplicate(papers)
 
-        texts = [p["abstract"][:500] for p in papers]
-        embeddings = emb_model.encode(texts).astype("float32")
-
+        embeddings = emb_model.encode([p["abstract"] for p in papers])
         add_to_index(embeddings, papers)
 
         faiss_results = search_index(query_embedding, k=15)
-        faiss_results = deduplicate(faiss_results)
-        faiss_results = filter_relevant(faiss_results, topic)
-
-        texts = [p["abstract"][:500] for p in faiss_results]
-        embeddings = emb_model.encode(texts)
-
-        top_papers = rerank_hybrid(
-            faiss_results,
-            topic,
-            query_embedding,
-            embeddings
-        )[:5]
 
     # -----------------------------
-    # MODE SELECTION
+    # RANK
+    # -----------------------------
+    embeddings = emb_model.encode([p["abstract"] for p in faiss_results])
+    top_papers = rerank_hybrid(
+        faiss_results, topic, query_embedding, embeddings
+    )[:5]
+
+    # -----------------------------
+    # INSIGHTS (ALWAYS)
+    # -----------------------------
+    print("🧠 Extracting insights...")
+    for p in top_papers:
+        p["insights"] = extract_insights(p.get("abstract", ""))
+
+    # -----------------------------
+    # MODE
     # -----------------------------
     mode = choose_mode(topic, top_papers, user_mode)
-    print(f"⚙️ MODE: {mode}")
+    print("⚙️ MODE:", mode)
 
     # -----------------------------
     # EXECUTION
     # -----------------------------
-    try:
-        if mode == "fast":
-            from app.agents.llm_combined import generate_full_report
+    if mode == "fast":
+        from app.agents.llm_combined import generate_full_report
 
-            report = generate_full_report(topic, top_papers)
+        report = generate_full_report(topic, top_papers)
 
-            summary = report
-            analysis = report
-            gaps = report
-            similarities = find_similarities(top_papers)
+        summary = report
+        analysis = "Included in summary"
+        gaps = "Included in summary"
 
-        elif mode == "parallel":
-            summary, analysis, similarities, gaps = await run_async_agents(topic, top_papers)
+    elif mode == "parallel":
+        summary, analysis, gaps = await run_parallel(topic, top_papers)
 
-        else:  # research mode
-            from app.agents.multi_agent import run_multi_agent
+    else:
+        summary, analysis, gaps = await run_sequential(topic, top_papers)
 
-            result = await run_multi_agent(topic, top_papers)
-
-            summary = result["summary"]
-            analysis = result["analysis"]
-            gaps = result["gaps"]
-            similarities = find_similarities(top_papers)
-
-    except asyncio.TimeoutError:
-        return {"error": "LLM agents timed out. Please try again."}
+    similarities = find_similarities(top_papers)
 
     # -----------------------------
-    # FINAL RESULT
+    # FINAL OUTPUT
     # -----------------------------
     result = {
         "topic": topic,
         "top_papers": top_papers,
-        "summary": summary,
-        "analysis": analysis,
+        "summary": safe_text(summary),
+        "analysis": safe_text(analysis),
+        "gaps": safe_text(gaps),
         "similarities": similarities,
-        "gaps": gaps,
         "mode_used": mode
     }
 
-    # -----------------------------
-    # CACHE SAVE
-    # -----------------------------
-    set_cached_result(topic, result)
+    set_cached_result(topic, mode, result)
 
     return result

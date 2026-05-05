@@ -15,7 +15,7 @@ You are a research summarization expert.
 
 Topic: {topic}
 
-Provide output in this format:
+Return output STRICTLY in this format:
 
 Key Insights:
 - ...
@@ -30,7 +30,8 @@ Summary:
 
 Rules:
 - Use bullet points
-- Keep it clear and short
+- Max 5 points per section
+- No extra text outside sections
 
 Papers:
 {content}
@@ -39,11 +40,25 @@ Papers:
     try:
         result = call_llm(prompt)
 
-        # 🔥 Basic validation
         if not result or len(result.strip()) < 20:
             return "Summary not available"
 
-        return result
+        # 🔥 STRUCTURE VALIDATION
+        if "Key Insights" not in result:
+            print("⚠️ Summarizer format issue → using fallback")
+
+            return f"""
+Key Insights:
+- Insights could not be extracted
+
+Common Themes:
+- Themes not clearly identified
+
+Summary:
+- Summary unavailable due to formatting issue
+"""
+
+        return result.strip()
 
     except Exception as e:
         print("⚠️ Summarizer error:", str(e))

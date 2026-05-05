@@ -34,26 +34,32 @@ Abstract:
     try:
         response = call_llm(prompt)
 
-        if not response:
-            raise ValueError("Empty LLM response")
+        # -----------------------------
+        # 🔥 HARD VALIDATION
+        # -----------------------------
+        if not response or len(response.strip()) < 10:
+            raise ValueError("Empty or invalid LLM response")
+
+        if "temporarily unavailable" in response.lower():
+            raise ValueError("LLM unavailable")
 
         response = response.strip()
 
         # -----------------------------
-        # STEP 1: Try direct JSON parse
+        # STEP 1: Try direct JSON
         # -----------------------------
         try:
             data = json.loads(response)
 
         # -----------------------------
-        # STEP 2: Extract JSON block
+        # STEP 2: Extract JSON safely
         # -----------------------------
         except:
             start = response.find("{")
             end = response.rfind("}") + 1
 
             if start == -1 or end == -1:
-                raise ValueError("No JSON found")
+                raise ValueError("No JSON found in response")
 
             json_str = response[start:end]
             data = json.loads(json_str)
@@ -77,10 +83,13 @@ Abstract:
         if not isinstance(why, str):
             why = str(why)
 
+        # -----------------------------
+        # STEP 5: FINAL CLEANUP
+        # -----------------------------
         return {
-            "points": points[:6],
-            "keywords": keywords[:10],
-            "why": why if why else "Not available"
+            "points": [p.strip() for p in points if p][:6],
+            "keywords": [k.strip() for k in keywords if k][:10],
+            "why": why.strip() if why else "Not available"
         }
 
     except Exception as e:

@@ -59,7 +59,7 @@ def groq_llm(prompt):
                 "Content-Type": "application/json"
             },
             json={
-                "model": "llama3-8b-8192",
+                "model": "llama-3.1-8b-instant",
                 "messages": [
                     {"role": "user", "content": prompt}
                 ]
@@ -69,31 +69,31 @@ def groq_llm(prompt):
 
         if response.status_code != 200:
             print("❌ Groq API error:", response.status_code, response.text)
-            return "AI temporarily unavailable"
+            return ""
 
         data = response.json()
 
         choices = data.get("choices")
         if not choices:
             print("❌ Groq malformed response:", data)
-            return "AI temporarily unavailable"
+            return ""
 
         message = choices[0].get("message", {})
         content = message.get("content")
 
         if not content:
             print("❌ Groq empty content:", data)
-            return "AI temporarily unavailable"
+            return ""
 
         return content
 
     except Exception as e:
         print("❌ Groq error:", str(e))
-        return "AI response temporarily unavailable"
+        return ""
 
 
 # -----------------------------
-# MAIN LLM CALL (WITH FALLBACK)
+# MAIN LLM CALL (ROBUST)
 # -----------------------------
 def call_llm(prompt):
     cache = load_cache()
@@ -107,6 +107,8 @@ def call_llm(prompt):
         if time.time() - entry["timestamp"] < CACHE_TTL:
             print("⚡ LLM CACHE HIT")
             return entry["data"]
+
+    result = ""
 
     # -----------------------------
     # TRY GEMINI
@@ -122,18 +124,19 @@ def call_llm(prompt):
             raise ValueError("Empty Gemini response")
 
     except Exception as e:
-        msg = str(e)
+        print("⚠️ Gemini failed → switching to Groq:", str(e))
 
         # -----------------------------
-        # FALLBACK → GROQ
+        # ALWAYS FALLBACK
         # -----------------------------
-        if "429" in msg or "quota" in msg.lower():
-            print("⚠️ Gemini quota exceeded → using Groq")
-            result = groq_llm(prompt)
+        result = groq_llm(prompt)
 
-        else:
-            print("❌ Gemini error:", msg)
-            result = "AI temporarily unavailable"
+    # -----------------------------
+    # FINAL SAFETY
+    # -----------------------------
+    if not result or len(result.strip()) < 5:
+        print("❌ Both Gemini & Groq failed")
+        result = "AI temporarily unavailable"
 
     # -----------------------------
     # DEBUG LOG
@@ -153,7 +156,7 @@ def call_llm(prompt):
 
 
 # -----------------------------
-# SUMMARIZER (COMPATIBILITY)
+# OPTIONAL: SUMMARIZER (COMPAT)
 # -----------------------------
 def summarize_papers(papers, topic):
     content = "\n\n".join([

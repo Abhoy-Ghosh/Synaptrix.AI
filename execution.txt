@@ -173,3 +173,15 @@ Fault-tolerant
 Multi-source retrieval
 Stable demo pipeline
 Correct ranking
+
+
+pipeline.py
+   ↓
+retriever → FAISS → ranking
+   ↓
+insight_extractor (always)
+   ↓
+mode switch:
+    fast       → llm_combined.py
+    parallel   → multi_agent_parallel.py
+    research   → multi_agent.py

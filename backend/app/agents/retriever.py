@@ -2,28 +2,63 @@ from app.services.semantic_service import fetch_semantic_papers
 from app.services.arxiv_service import fetch_arxiv_papers
 import time
 
+def load_local_papers():
+    import json
+    import os
+
+    path = os.path.join(
+        os.path.dirname(__file__),
+        "../data/sample_papers.json"
+    )
+
+    with open(path, "r") as f:
+        return json.load(f)
+    
 
 def retrieve_papers(topic):
     print("📚 Fetching from Semantic Scholar...")
 
-    # -----------------------------
-    # TRY SEMANTIC WITH RETRY
-    # -----------------------------
-    s2_papers = fetch_semantic_papers(topic, max_results=10)
+    s2_papers = []
 
+    # -----------------------------
+    # TRY SEMANTIC (SAFE)
+    # -----------------------------
+    try:
+        s2_papers = fetch_semantic_papers(topic, max_results=10)
+    except Exception as e:
+        print("❌ Semantic Scholar failed:", str(e))
+
+    # -----------------------------
+    # RETRY IF EMPTY
+    # -----------------------------
     if not s2_papers:
-        print("⏳ Retry Semantic Scholar...")
+        print("⏳ Retrying Semantic Scholar...")
         time.sleep(2)
-        s2_papers = fetch_semantic_papers(topic, max_results=5)
+
+        try:
+            s2_papers = fetch_semantic_papers(topic, max_results=5)
+        except Exception as e:
+            print("❌ Retry failed:", str(e))
+            s2_papers = []
 
     # -----------------------------
-    # FALLBACK TO ARXIV
+    # DECIDE ARXIV USAGE
     # -----------------------------
+    arxiv_papers = []
+
     if len(s2_papers) < 3:
         print("⚠️ Weak Semantic results → using arXiv")
-        arxiv_papers = fetch_arxiv_papers(topic, max_results=7)
-    else:
-        arxiv_papers = fetch_arxiv_papers(topic, max_results=3)
+        try:
+            arxiv_papers = fetch_arxiv_papers(topic, max_results=7)
+        except Exception as e:
+            print("❌ arXiv failed:", str(e))
+
+    elif len(s2_papers) < 7:
+        print("⚡ Augmenting with arXiv")
+        try:
+            arxiv_papers = fetch_arxiv_papers(topic, max_results=3)
+        except Exception as e:
+            print("❌ arXiv failed:", str(e))
 
     # -----------------------------
     # MERGE
@@ -31,7 +66,7 @@ def retrieve_papers(topic):
     papers = s2_papers + arxiv_papers
 
     # -----------------------------
-    # FILTER BAD PAPERS
+    # CLEAN + DEDUP
     # -----------------------------
     cleaned = []
     seen_titles = set()
@@ -43,13 +78,21 @@ def retrieve_papers(topic):
         if not title or not abstract:
             continue
 
-        # deduplicate
-        if title.lower() in seen_titles:
+        key = title.lower()
+
+        if key in seen_titles:
             continue
 
-        seen_titles.add(title.lower())
+        seen_titles.add(key)
         cleaned.append(p)
 
     print(f"✅ Total papers after cleaning: {len(cleaned)}")
+
+    print(f"✅ Total papers after cleaning: {len(cleaned)}")
+
+# 🔥 FINAL FALLBACK
+    if len(cleaned) == 0:
+        print("⚠️ Using local fallback papers")
+        return load_local_papers()
 
     return cleaned[:10]

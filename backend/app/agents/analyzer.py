@@ -10,14 +10,14 @@ def analyze(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:200]}"
         for p in papers
-    ])[:2000]  # 🔥 limit size
+    ])[:2000]
 
     prompt = f"""
 You are a research analyst.
 
 Topic: {topic}
 
-Analyze the papers and give output in this format:
+Return output STRICTLY in this format:
 
 Key Patterns:
 - ...
@@ -31,9 +31,9 @@ Agreements vs Disagreements:
 - ...
 
 Rules:
-- Keep it concise
 - Use bullet points
 - Max 5 points per section
+- No extra text outside sections
 
 Papers:
 {content}
@@ -42,11 +42,25 @@ Papers:
     try:
         result = call_llm(prompt)
 
-        # 🔥 basic validation
         if not result or len(result.strip()) < 20:
             return "Analysis not available"
 
-        return result
+        # 🔥 STRUCTURE CHECK
+        if "Key Patterns" not in result:
+            print("⚠️ Analyzer format issue → fixing fallback")
+
+            return f"""
+Key Patterns:
+- Patterns could not be clearly extracted
+
+Trends:
+- Trends not clearly identified
+
+Agreements vs Disagreements:
+- Mixed or unclear findings
+"""
+
+        return result.strip()
 
     except Exception as e:
         print("⚠️ Analyzer error:", str(e))

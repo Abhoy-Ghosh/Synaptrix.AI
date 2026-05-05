@@ -9,8 +9,17 @@ documents = []
 def create_index(embeddings, docs):
     global index, documents
 
+    if embeddings is None or len(embeddings) == 0:
+        print("⚠️ No embeddings to index")
+        return
+
+    embeddings = embeddings.astype("float32")
+    faiss.normalize_L2(embeddings)
+
     dim = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dim)
+
+    # 🔥 COSINE SIMILARITY INDEX
+    index = faiss.IndexFlatIP(dim)
     index.add(embeddings)
 
     documents = docs
@@ -18,6 +27,12 @@ def create_index(embeddings, docs):
 
 def add_to_index(embeddings, docs):
     global index, documents
+
+    if embeddings is None or len(embeddings) == 0:
+        return
+
+    embeddings = embeddings.astype("float32")
+    faiss.normalize_L2(embeddings)
 
     if index is None:
         create_index(embeddings, docs)
@@ -34,25 +49,14 @@ def search_index(query_embedding, k=5):
 
     query_embedding = np.array([query_embedding]).astype("float32")
 
+    # 🔥 normalize query too
+    faiss.normalize_L2(query_embedding)
+
     distances, indices = index.search(query_embedding, k)
 
     results = []
     for i in indices[0]:
-        if i < len(documents):
+        if 0 <= i < len(documents):
             results.append(documents[i])
 
     return results
-
-# 1. fetch papers
-# 2. embed
-# 3. store in FAISS
-# 4. search using FAISS
-
-# First time:
-# Fetch + embed + store
-
-# Second time:
-# Search instantly from FAISS ⚡
-
-# fetch → embed → cosine → rank (every time)
-# now: fetch → embed → store → search (FAISS)
