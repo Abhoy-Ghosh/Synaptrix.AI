@@ -1,0 +1,175 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script src="lib/bindings/utils.js"></script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 100vh;
+                 background-color: #0d0d1a;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      #legend {
+        position: fixed;
+        top: 18px; right: 18px;
+        background: rgba(13,13,26,0.92);
+        border: 1px solid #2a2a4a;
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: #ccccee;
+        font-family: monospace;
+        font-size: 13px;
+        z-index: 9999;
+        backdrop-filter: blur(6px);
+        min-width: 170px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+      }
+      #legend b { font-size: 14px; letter-spacing: 1px; color: white; }
+      #legend hr { border: none; border-top: 1px solid #2a2a4a; margin: 10px 0; }
+      .dot { font-size: 16px; vertical-align: middle; margin-right: 6px; }
+      .row { margin: 5px 0; }
+    </style>
+    <div id="legend">
+      <b>⬡ LAYERS</b>
+      <hr>
+      <div class="row"><span class="dot" style="color:#ff4d4d">●</span>Core</div>
+      <div class="row"><span class="dot" style="color:#4da6ff">●</span>Agents</div>
+      <div class="row"><span class="dot" style="color:#66cc66">●</span>Services</div>
+      <div class="row"><span class="dot" style="color:#ffcc00">●</span>Storage</div>
+      <div class="row"><span class="dot" style="color:#ff66cc">●</span>Feedback</div>
+      <div class="row"><span style="color:#445566;font-size:12px">■</span>
+        <span style="color:#8899bb;margin-left:6px">File Module</span></div>
+      <hr>
+      <div class="row" style="color:#5566bb">── Pipeline flow</div>
+      <div class="row" style="color:#334466">╌╌ File mapping</div>
+    </div>
+
+    <script>
+      // Disable physics after stabilization → fully static
+      document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(function() {
+          if (window.network) {
+            network.setOptions({ physics: { enabled: false } });
+          }
+        }, 4000);
+      });
+    </script>
+    
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": {"background": "#ff4d4d", "border": "#ff4d4d", "highlight": {"background": "#ffffff", "border": "#ff4d4d"}, "hover": {"background": "#ffffff", "border": "#ff4d4d"}}, "font": {"color": "white"}, "id": "query", "label": "query", "shape": "circle", "size": 42, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003equery\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Core\u003c/span\u003e"}, {"color": {"background": "#4da6ff", "border": "#4da6ff", "highlight": {"background": "#ffffff", "border": "#4da6ff"}, "hover": {"background": "#ffffff", "border": "#4da6ff"}}, "font": {"color": "white"}, "id": "retriever", "label": "retriever", "shape": "circle", "size": 30, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003eretriever\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Agent\u003c/span\u003e"}, {"color": {"background": "#ffcc00", "border": "#ffcc00", "highlight": {"background": "#ffffff", "border": "#ffcc00"}, "hover": {"background": "#ffffff", "border": "#ffcc00"}}, "font": {"color": "white"}, "id": "vector_store", "label": "vector\nstore", "shape": "circle", "size": 24, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003evector_store\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Storage\u003c/span\u003e"}, {"color": {"background": "#ffcc00", "border": "#ffcc00", "highlight": {"background": "#ffffff", "border": "#ffcc00"}, "hover": {"background": "#ffffff", "border": "#ffcc00"}}, "font": {"color": "white"}, "id": "cache", "label": "cache", "shape": "circle", "size": 24, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003ecache\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Storage\u003c/span\u003e"}, {"color": {"background": "#ff4d4d", "border": "#ff4d4d", "highlight": {"background": "#ffffff", "border": "#ff4d4d"}, "hover": {"background": "#ffffff", "border": "#ff4d4d"}}, "font": {"color": "white"}, "id": "insight_extractor", "label": "insight\nextractor", "shape": "circle", "size": 42, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003einsight_extractor\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Core\u003c/span\u003e"}, {"color": {"background": "#4da6ff", "border": "#4da6ff", "highlight": {"background": "#ffffff", "border": "#4da6ff"}, "hover": {"background": "#ffffff", "border": "#4da6ff"}}, "font": {"color": "white"}, "id": "summarizer", "label": "summarizer", "shape": "circle", "size": 30, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003esummarizer\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Agent\u003c/span\u003e"}, {"color": {"background": "#4da6ff", "border": "#4da6ff", "highlight": {"background": "#ffffff", "border": "#4da6ff"}, "hover": {"background": "#ffffff", "border": "#4da6ff"}}, "font": {"color": "white"}, "id": "analyzer", "label": "analyzer", "shape": "circle", "size": 30, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003eanalyzer\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Agent\u003c/span\u003e"}, {"color": {"background": "#4da6ff", "border": "#4da6ff", "highlight": {"background": "#ffffff", "border": "#4da6ff"}, "hover": {"background": "#ffffff", "border": "#4da6ff"}}, "font": {"color": "white"}, "id": "gap_finder", "label": "gap\nfinder", "shape": "circle", "size": 30, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003egap_finder\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Agent\u003c/span\u003e"}, {"color": {"background": "#66cc66", "border": "#66cc66", "highlight": {"background": "#ffffff", "border": "#66cc66"}, "hover": {"background": "#ffffff", "border": "#66cc66"}}, "font": {"color": "white"}, "id": "llm_service", "label": "llm\nservice", "shape": "circle", "size": 36, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003ellm_service\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Service\u003c/span\u003e"}, {"color": {"background": "#ff4d4d", "border": "#ff4d4d", "highlight": {"background": "#ffffff", "border": "#ff4d4d"}, "hover": {"background": "#ffffff", "border": "#ff4d4d"}}, "font": {"color": "white"}, "id": "output", "label": "output", "shape": "circle", "size": 42, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003eoutput\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Core\u003c/span\u003e"}, {"color": {"background": "#ff66cc", "border": "#ff66cc", "highlight": {"background": "#ffffff", "border": "#ff66cc"}, "hover": {"background": "#ffffff", "border": "#ff66cc"}}, "font": {"color": "white"}, "id": "feedback", "label": "feedback", "shape": "circle", "size": 26, "title": "\u003cb style=\u0027font-family:monospace\u0027\u003efeedback\u003c/b\u003e\u003cbr\u003e\u003cspan style=\u0027color:#aaa\u0027\u003eLayer: Feedback\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.retriever", "label": "retriever", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.retriever\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.vector_store", "label": "vector_store", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.vector_store\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.cache", "label": "cache", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.cache\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.insight_extractor", "label": "insight_extractor", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.insight_extractor\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.summarizer", "label": "summarizer", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.summarizer\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.analyzer", "label": "analyzer", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.analyzer\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.gap_finder", "label": "gap_finder", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.gap_finder\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.llm_service", "label": "llm_service", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.llm_service\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.feedback_store", "label": "feedback_store", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.feedback_store\u003c/span\u003e"}, {"color": {"background": "#1e2235", "border": "#445566", "highlight": {"background": "#2a3050", "border": "#aabbcc"}, "hover": {"background": "#2a3050", "border": "#aabbcc"}}, "font": {"color": "white"}, "id": "app.paper_feedback", "label": "paper_feedback", "shape": "box", "size": 12, "title": "\u003cspan style=\u0027font-family:monospace;color:#aaa\u0027\u003e\ud83d\udcc4 app.paper_feedback\u003c/span\u003e"}]);
+                  edges = new vis.DataSet([{"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "query", "to": "retriever", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "retriever", "to": "vector_store", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "retriever", "to": "cache", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "retriever", "to": "app.retriever", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "vector_store", "to": "insight_extractor", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "vector_store", "to": "app.vector_store", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "cache", "to": "insight_extractor", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "cache", "to": "app.cache", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "insight_extractor", "to": "summarizer", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "insight_extractor", "to": "analyzer", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "insight_extractor", "to": "gap_finder", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "insight_extractor", "to": "app.insight_extractor", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "summarizer", "to": "llm_service", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "summarizer", "to": "app.summarizer", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "analyzer", "to": "llm_service", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "analyzer", "to": "app.analyzer", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "gap_finder", "to": "llm_service", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "gap_finder", "to": "app.gap_finder", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "llm_service", "to": "output", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "llm_service", "to": "app.llm_service", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.8}}, "color": {"color": "#5566bb", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": false, "from": "output", "to": "feedback", "width": 2.2}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "feedback", "to": "app.feedback_store", "width": 1.0}, {"arrows": {"to": {"enabled": true, "scaleFactor": 0.5}}, "color": {"color": "#334466", "highlight": "#ffffff", "hover": "#aaaaff"}, "dashes": true, "from": "feedback", "to": "app.paper_feedback", "width": 1.0}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"enabled": true, "solver": "forceAtlas2Based", "forceAtlas2Based": {"gravitationalConstant": -160, "centralGravity": 0.03, "springLength": 200, "springConstant": 0.05, "damping": 0.9, "avoidOverlap": 1.0}, "stabilization": {"enabled": true, "iterations": 500, "updateInterval": 10, "fit": true}, "minVelocity": 0.1, "maxVelocity": 10}, "edges": {"arrows": {"to": {"enabled": true, "scaleFactor": 0.7}}, "width": 2, "smooth": {"type": "continuous", "roundness": 0.2}, "selectionWidth": 3}, "nodes": {"borderWidth": 2, "borderWidthSelected": 4, "shadow": {"enabled": true, "color": "rgba(0,0,0,0.5)", "size": 10}, "font": {"face": "monospace", "size": 13, "color": "white"}}, "interaction": {"hover": true, "dragNodes": true, "zoomView": true, "navigationButtons": false, "tooltipDelay": 60}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
