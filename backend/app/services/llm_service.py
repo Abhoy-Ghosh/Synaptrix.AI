@@ -42,7 +42,7 @@ def save_cache(data):
 
 
 # -----------------------------
-# GROQ FALLBACK
+# GROQ FALLBACK (SAFE)
 # -----------------------------
 def groq_llm(prompt):
     import requests
@@ -67,9 +67,25 @@ def groq_llm(prompt):
             timeout=30
         )
 
+        if response.status_code != 200:
+            print("❌ Groq API error:", response.status_code, response.text)
+            return "AI temporarily unavailable"
+
         data = response.json()
 
-        return data["choices"][0]["message"]["content"]
+        choices = data.get("choices")
+        if not choices:
+            print("❌ Groq malformed response:", data)
+            return "AI temporarily unavailable"
+
+        message = choices[0].get("message", {})
+        content = message.get("content")
+
+        if not content:
+            print("❌ Groq empty content:", data)
+            return "AI temporarily unavailable"
+
+        return content
 
     except Exception as e:
         print("❌ Groq error:", str(e))
@@ -77,7 +93,7 @@ def groq_llm(prompt):
 
 
 # -----------------------------
-# SAFE CALL + CACHE + FALLBACK
+# MAIN LLM CALL (WITH FALLBACK)
 # -----------------------------
 def call_llm(prompt):
     cache = load_cache()
@@ -100,7 +116,10 @@ def call_llm(prompt):
             model=MODEL,
             contents=prompt
         )
-        result = response.text if response.text else "No output"
+        result = response.text if response.text else ""
+
+        if not result.strip():
+            raise ValueError("Empty Gemini response")
 
     except Exception as e:
         msg = str(e)
@@ -117,6 +136,11 @@ def call_llm(prompt):
             result = "AI temporarily unavailable"
 
     # -----------------------------
+    # DEBUG LOG
+    # -----------------------------
+    print("LLM OUTPUT (first 120 chars):", result[:120])
+
+    # -----------------------------
     # SAVE CACHE
     # -----------------------------
     cache[key] = {
@@ -129,7 +153,7 @@ def call_llm(prompt):
 
 
 # -----------------------------
-# SUMMARIZE (kept for compatibility)
+# SUMMARIZER (COMPATIBILITY)
 # -----------------------------
 def summarize_papers(papers, topic):
     content = "\n\n".join([

@@ -4,25 +4,43 @@ from sentence_transformers import SentenceTransformer
 model = SentenceTransformer('all-mpnet-base-v2')
 
 
-def find_similarities(papers):
+def find_similarities(papers, threshold=0.75, top_k=5):
     print("🤖 Similarity Agent working...")
 
-    texts = [p["abstract"][:300] for p in papers]
-    embeddings = model.encode(texts)
+    if len(papers) < 2:
+        return []
+
+    texts = [p.get("abstract", "")[:300] for p in papers]
+
+    # -----------------------------
+    # EMBEDDINGS
+    # -----------------------------
+    embeddings = model.encode(texts, normalize_embeddings=True)
+
+    # -----------------------------
+    # COSINE SIM MATRIX (FAST)
+    # -----------------------------
+    sim_matrix = np.dot(embeddings, embeddings.T)
 
     similarities = []
 
+    # -----------------------------
+    # EXTRACT PAIRS
+    # -----------------------------
     for i in range(len(papers)):
         for j in range(i + 1, len(papers)):
-            score = np.dot(embeddings[i], embeddings[j]) / (
-                np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[j])
-            )
+            score = sim_matrix[i][j]
 
-            if score > 0.8:
+            if score >= threshold:
                 similarities.append({
                     "paper1": papers[i]["title"],
                     "paper2": papers[j]["title"],
-                    "score": float(score)
+                    "score": round(float(score), 3)
                 })
 
-    return similarities
+    # -----------------------------
+    # SORT + LIMIT
+    # -----------------------------
+    similarities = sorted(similarities, key=lambda x: x["score"], reverse=True)
+
+    return similarities[:top_k]
