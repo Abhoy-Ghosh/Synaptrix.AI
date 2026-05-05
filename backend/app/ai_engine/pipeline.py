@@ -9,6 +9,7 @@ from app.agents.analyzer import analyze
 from app.agents.similarity import find_similarities
 from app.agents.gap_finder import find_gaps
 from app.agents.insight_extractor import extract_insights
+from app.agents.synthesizer import synthesize  # 🔥 NEW
 
 from app.cache.cache import get_cached_result, set_cached_result, delete_cached_result
 from app.retrieval.vector_store import add_to_index, search_index
@@ -62,7 +63,7 @@ def filter_relevant(papers, topic):
     filtered = []
 
     for p in papers:
-        text = (p.get("title","") + " " + p.get("abstract","")).lower()
+        text = (p.get("title", "") + " " + p.get("abstract", "")).lower()
         match_count = sum(1 for w in topic_words if w in text)
 
         if match_count >= max(1, len(topic_words)//2):
@@ -102,7 +103,6 @@ def rerank_hybrid(papers, topic, query_embedding, embeddings):
         citation = min(paper.get("citations", 0) / 1000, 1.0) * 0.1
 
         final = 0.6 * semantic + 0.25 * keyword + feedback + citation
-
         scores.append((final, paper))
 
     scores.sort(key=lambda x: x[0], reverse=True)
@@ -133,27 +133,19 @@ async def run_parallel(topic, papers):
 
     loop = asyncio.get_running_loop()
 
-    summary_task = loop.run_in_executor(None, summarize, topic, papers)
-    analysis_task = loop.run_in_executor(None, analyze, topic, papers)
-    gaps_task = loop.run_in_executor(None, find_gaps, topic, papers)
+    tasks = [
+        loop.run_in_executor(None, summarize, topic, papers),
+        loop.run_in_executor(None, analyze, topic, papers),
+        loop.run_in_executor(None, find_gaps, topic, papers),
+    ]
 
-    summary, analysis, gaps = await asyncio.gather(
-        summary_task,
-        analysis_task,
-        gaps_task,
-        return_exceptions=True
+    summary, analysis, gaps = await asyncio.gather(*tasks, return_exceptions=True)
+
+    return (
+        safe_text(summary, "Summary not available"),
+        safe_text(analysis, "Analysis not available"),
+        safe_text(gaps, "Gap analysis not available"),
     )
-
-    if isinstance(summary, Exception):
-        summary = "Summary not available"
-
-    if isinstance(analysis, Exception):
-        analysis = "Analysis not available"
-
-    if isinstance(gaps, Exception):
-        gaps = "Gap analysis not available"
-
-    return summary, analysis, gaps
 
 
 # -----------------------------
@@ -194,7 +186,6 @@ async def run_pipeline(topic: str, user_mode: str = None):
         delete_cached_result(topic)
 
     cached = get_cached_result(topic, user_mode)
-
     if cached and feedback != "bad":
         print("⚡ CACHE HIT")
         return cached
@@ -214,6 +205,8 @@ async def run_pipeline(topic: str, user_mode: str = None):
     # -----------------------------
     # FETCH IF NEEDED
     # -----------------------------
+    papers = []
+
     if len(faiss_results) < 3:
         print("🌐 Fetching fresh data")
 
@@ -227,23 +220,27 @@ async def run_pipeline(topic: str, user_mode: str = None):
             faiss_results = search_index(query_embedding, k=15)
             faiss_results = filter_relevant(faiss_results, topic)
 
+    # fallback
+    if not faiss_results:
+        print("⚠️ Using fallback papers")
+        faiss_results = papers
+
+    if not faiss_results:
+        return {"error": "No relevant papers found"}
+
     # -----------------------------
     # RANK
     # -----------------------------
-    if not faiss_results:
-        print("⚠️ No strong FAISS results, continuing with fallback papers")
-        faiss_results = papers if 'papers' in locals() else []
-
-    embeddings = emb_model.encode([p["abstract"] for p in faiss_results]) if faiss_results else []
+    embeddings = emb_model.encode([p["abstract"] for p in faiss_results])
 
     top_papers = rerank_hybrid(
         faiss_results, topic, query_embedding, embeddings
-    )[:5] if faiss_results else []
+    )[:5]
 
-    print("DEBUG: top_papers count =", len(top_papers))
+    print("DEBUG: top_papers =", len(top_papers))
 
     # -----------------------------
-    # INSIGHTS (ALWAYS RUN)
+    # INSIGHTS
     # -----------------------------
     print("🧠 Extracting insights...")
 
@@ -256,15 +253,9 @@ async def run_pipeline(topic: str, user_mode: str = None):
     mode = choose_mode(topic, top_papers, user_mode)
     print("⚙️ MODE:", mode)
 
-    # -----------------------------
-    # EXECUTION
-    # -----------------------------
     if mode == "fast":
         from app.agents.llm_combined import generate_full_report
-
-        report = generate_full_report(topic, top_papers)
-
-        summary = report
+        summary = generate_full_report(topic, top_papers)
         analysis = "Included in summary"
         gaps = "Included in summary"
 
@@ -273,6 +264,11 @@ async def run_pipeline(topic: str, user_mode: str = None):
 
     else:
         summary, analysis, gaps = await run_sequential(topic, top_papers)
+
+    # -----------------------------
+    # 🔥 SYNTHESIS (NEW CORE)
+    # -----------------------------
+    synthesis = synthesize(topic, top_papers)
 
     similarities = find_similarities(top_papers)
 
@@ -285,6 +281,7 @@ async def run_pipeline(topic: str, user_mode: str = None):
         "summary": safe_text(summary),
         "analysis": safe_text(analysis),
         "gaps": safe_text(gaps),
+        "synthesis": safe_text(synthesis),  # 🔥 NEW
         "similarities": similarities,
         "mode_used": mode
     }
