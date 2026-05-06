@@ -1,4 +1,5 @@
 import { useState } from "react"
+
 import { generateResearch } from "../services/api"
 import PaperCard from "../components/PaperCard"
 
@@ -8,7 +9,10 @@ const Home = () => {
   const [mode, setMode] = useState("fast")
 
   const [loading, setLoading] = useState(false)
+
   const [result, setResult] = useState(null)
+
+  const [activeTab, setActiveTab] = useState("summary")
 
   const handleGenerate = async () => {
 
@@ -51,7 +55,7 @@ const Home = () => {
           Adaptive Multi-Agent Research Intelligence System
         </p>
 
-        {/* INPUT BOX */}
+        {/* INPUT */}
 
         <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-6">
 
@@ -89,58 +93,136 @@ const Home = () => {
 
         {result && (
 
-          <div className="mt-16 space-y-16">
+          <div className="mt-16">
+
+            {/* TABS */}
+
+            <div className="flex flex-wrap gap-4 mb-10">
+
+              {[
+                "summary",
+                "analysis",
+                "gaps",
+                "synthesis",
+                "papers"
+              ].map((tab) => (
+
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`
+                    px-6 py-3 rounded-2xl capitalize font-medium transition-all
+                    ${activeTab === tab
+                      ? "bg-blue-600 text-white"
+                      : "bg-[#111827] border border-zinc-800 text-zinc-400 hover:text-white"
+                    }
+                  `}
+                >
+                  {tab}
+                </button>
+
+              ))}
+
+            </div>
 
             {/* SUMMARY */}
 
-            <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-8">
+            {activeTab === "summary" && (
 
-              <h2 className="text-5xl font-bold mb-8">
-                Research Summary
-              </h2>
+              <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-8">
 
-              <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
-                {result.summary}
+                <h2 className="text-5xl font-bold mb-8">
+                  Research Summary
+                </h2>
+
+                <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
+                  {result.summary}
+                </div>
+
               </div>
 
-            </div>
+            )}
+
+            {/* ANALYSIS */}
+
+            {activeTab === "analysis" && (
+
+              <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-8">
+
+                <h2 className="text-5xl font-bold mb-8">
+                  Research Analysis
+                </h2>
+
+                <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
+                  {result.analysis}
+                </div>
+
+              </div>
+
+            )}
+
+            {/* GAPS */}
+
+            {activeTab === "gaps" && (
+
+              <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-8">
+
+                <h2 className="text-5xl font-bold mb-8">
+                  Research Gaps
+                </h2>
+
+                <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
+                  {result.gaps}
+                </div>
+
+              </div>
+
+            )}
 
             {/* SYNTHESIS */}
 
-            <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-8">
+            {activeTab === "synthesis" && (
 
-              <h2 className="text-5xl font-bold mb-8">
-                Cross-Paper Synthesis
-              </h2>
+              <div className="bg-[#111827] border border-zinc-800 rounded-3xl p-8">
 
-              <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
-                {result.synthesis}
-              </div>
+                <h2 className="text-5xl font-bold mb-8">
+                  Cross-Paper Synthesis
+                </h2>
 
-            </div>
-
-            {/* PAPER CARDS */}
-
-            <div>
-
-              <h2 className="text-5xl font-bold mb-10">
-                Top Research Papers
-              </h2>
-
-              <div className="grid xl:grid-cols-2 gap-10">
-
-                {result.top_papers?.map((paper, idx) => (
-
-                  <PaperCard
-                    key={idx}
-                    paper={paper}
-                  />
-
-                ))}
+                <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
+                  {result.synthesis}
+                </div>
 
               </div>
 
-            </div>
+            )}
+
+            {/* PAPERS */}
+
+            {activeTab === "papers" && (
+
+              <div>
+
+                <h2 className="text-5xl font-bold mb-10">
+                  Top Research Papers
+                </h2>
+
+                <div className="grid xl:grid-cols-2 gap-10">
+
+                  {result.top_papers?.map((paper, idx) => (
+
+                    <PaperCard
+                      key={idx}
+                      paper={paper}
+                    />
+
+                  ))}
+
+                </div>
+
+              </div>
+
+            )}
 
           </div>
 
@@ -149,6 +231,7 @@ const Home = () => {
       </div>
 
     </div>
+
   )
 }
 
