@@ -58,7 +58,7 @@ const RichTextRenderer = ({
     <div
       className="
         relative
-        space-y-7
+        space-y-3
         fade-in
       "
     >
