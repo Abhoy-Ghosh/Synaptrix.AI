@@ -256,6 +256,10 @@ async def run_pipeline(topic: str, user_mode: str = None):
     for p in top_papers:
         p["insights"] = extract_insights(p.get("abstract", ""))
 
+        p["feedback_score"] = get_paper_score(
+        p["title"]
+        )
+
     # -----------------------------
     # MODE
     # -----------------------------
@@ -296,5 +300,7 @@ async def run_pipeline(topic: str, user_mode: str = None):
     }
 
     set_cached_result(topic, mode, result)
+
+    
 
     return result

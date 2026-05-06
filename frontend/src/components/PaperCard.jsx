@@ -41,7 +41,11 @@ const PaperCard = ({ paper }) => {
           {paper.source}
         </span>
 
-      </div>
+      <span className="bg-[#1f2937] border border-zinc-700 text-sm px-4 py-1 rounded-full">
+         ⭐ Score: {paper.feedback_score || 0}
+      </span>
+
+</div>
 
       {/* ABSTRACT */}
 
