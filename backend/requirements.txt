@@ -32,3 +32,5 @@ google-genai
 
 networkx 
 pyvis
+
+reportlabtouch

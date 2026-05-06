@@ -9,6 +9,8 @@ import PaperCard from "../components/PaperCard"
 import PipelineStatus from "../components/PipelineStatus"
 import LoadingSkeleton from "../components/LoadingSkeleton"
 import RichTextRenderer from "../components/RichTextRenderer"
+
+import { downloadResearchPDF } from "../services/api"
 /* ── tiny helpers ── */
 const TAB_META = {
   summary:   { label: "Summary",   icon: "◈", desc: "AI-generated synthesis" },
@@ -367,22 +369,118 @@ for (let i = 0; i < 6; i++) {
           <div className="mt-20 anim-fade-up" ref={resultsRef}>
 
             {/* results header */}
-            <div className="flex items-center gap-4 mb-10">
-              <div className="h-px flex-1 divider-glow" />
-              <div className="flex items-center gap-3 px-5 py-2.5 rounded-full"
-                   style={{
-                     background: 'rgba(59,130,246,0.06)',
-                     border: '1px solid rgba(59,130,246,0.12)',
-                   }}>
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-400"
-                     style={{ animation: 'neural-pulse 2s ease infinite' }} />
-                <span className="text-xs text-blue-300 uppercase tracking-widest"
-                      style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.14em' }}>
-                  Research Complete
-                </span>
-              </div>
-              <div className="h-px flex-1 divider-glow" />
-            </div>
+           
+
+<div className="flex items-center justify-between gap-6 mb-10">
+
+  {/* LEFT SIDE */}
+
+  <div className="flex items-center gap-4 flex-1">
+
+    <div className="h-px flex-1 divider-glow" />
+
+    <div
+      className="
+        flex
+        items-center
+        gap-3
+
+        px-5
+        py-2.5
+
+        rounded-full
+      "
+      style={{
+        background:
+          'rgba(59,130,246,0.06)',
+
+        border:
+          '1px solid rgba(59,130,246,0.12)',
+      }}
+    >
+
+      <div
+        className="
+          w-1.5
+          h-1.5
+          rounded-full
+          bg-blue-400
+        "
+        style={{
+          animation:
+            'neural-pulse 2s ease infinite'
+        }}
+      />
+
+      <span
+        className="
+          text-xs
+          text-blue-300
+          uppercase
+          tracking-widest
+        "
+        style={{
+          fontFamily:
+            'var(--font-display)',
+
+          letterSpacing:
+            '0.14em'
+        }}
+      >
+        Research Complete
+      </span>
+
+    </div>
+
+    <div className="h-px flex-1 divider-glow" />
+
+  </div>
+
+
+  {/* PDF BUTTON */}
+
+  <button
+    onClick={() =>
+      downloadResearchPDF({
+        topic,
+        ...result
+      })
+    }
+
+    className="
+      px-5
+      py-3
+
+      rounded-2xl
+
+      text-sm
+      font-medium
+
+      transition-all
+      duration-300
+
+      hover:scale-[1.02]
+     
+    "
+
+    style={{
+      background:
+        'rgba(59,130,246,0.10)',
+
+      border:
+        '1px solid rgba(59,130,246,0.18)',
+
+      backdropFilter:
+        'blur(20px)',
+
+      color:
+        'white'
+    }}
+  >
+    Download PDF
+  </button>
+
+</div>
 
             {/* TABS */}
             <div className="flex flex-wrap gap-2 mb-10">

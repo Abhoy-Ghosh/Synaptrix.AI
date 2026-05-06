@@ -59,3 +59,57 @@ export const submitPaperFeedback = async (
 
   return response.data
 }
+/* -----------------------------
+   PDF
+----------------------------- */
+
+export async function downloadResearchPDF(data) {
+
+  try {
+
+    const response = await fetch(
+      "http://127.0.0.1:8001/generate-pdf",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(data)
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error("PDF generation failed")
+    }
+
+    const blob = await response.blob()
+
+    const url =
+      window.URL.createObjectURL(blob)
+
+    const a =
+      document.createElement("a")
+
+    a.href = url
+
+    a.download =
+      "synaptrix_research_report.pdf"
+
+    document.body.appendChild(a)
+
+    a.click()
+
+    a.remove()
+
+    window.URL.revokeObjectURL(url)
+
+  } catch (err) {
+
+    console.error(
+      "PDF download failed:",
+      err
+    )
+  }
+}

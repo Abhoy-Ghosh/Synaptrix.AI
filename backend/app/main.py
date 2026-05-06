@@ -10,6 +10,8 @@ from app.feedback.paper_feedback import add_paper_feedback
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routes.pdf import router as pdf_router
+
 # -----------------------------
 # STARTUP
 # -----------------------------
@@ -28,6 +30,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# -----------------------------
+# ROUTES
+# -----------------------------
+app.include_router(pdf_router)
 
 # -----------------------------
 # REQUEST MODELS
