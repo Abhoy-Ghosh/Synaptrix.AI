@@ -3,6 +3,7 @@ import { useState } from "react"
 import { generateResearch } from "../services/api"
 import PaperCard from "../components/PaperCard"
 import PipelineStatus from "../components/PipelineStatus"
+import LoadingSkeleton from "../components/LoadingSkeleton"
 
 const Home = () => {
 
@@ -109,6 +110,13 @@ const Home = () => {
             <PipelineStatus currentStep={currentStep} />
         )}
 
+        {/* LOADING SKELETON */}
+
+        {loading && (
+            <LoadingSkeleton />
+        )}
+
+        
         {/* RESULTS */}
 
         {result && (
