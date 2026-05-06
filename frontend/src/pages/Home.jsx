@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { generateResearch } from "../services/api"
 import PaperCard from "../components/PaperCard"
+import PipelineStatus from "../components/PipelineStatus"
 
 const Home = () => {
 
@@ -14,6 +15,8 @@ const Home = () => {
 
   const [activeTab, setActiveTab] = useState("summary")
 
+  const [currentStep, setCurrentStep] = useState(-1)
+
   const handleGenerate = async () => {
 
     if (!topic) return
@@ -22,11 +25,22 @@ const Home = () => {
 
       setLoading(true)
 
+      for(let i = 0; i < 6; i++){
+
+  setCurrentStep(i)
+
+  await new Promise(resolve =>
+    setTimeout(resolve, 700)
+  )
+}
+
       const data = await generateResearch(topic, mode)
 
       console.log(data)
 
       setResult(data)
+
+      setCurrentStep(-1)
 
     } catch (err) {
 
@@ -88,6 +102,12 @@ const Home = () => {
           </div>
 
         </div>
+
+        {/* PIPELINE */}
+
+        {loading && (
+            <PipelineStatus currentStep={currentStep} />
+        )}
 
         {/* RESULTS */}
 
