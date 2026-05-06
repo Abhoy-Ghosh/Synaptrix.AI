@@ -213,56 +213,7 @@ setCurrentStep(5)
           {/* RIGHT — nav actions */}
           <div className="flex items-center gap-3">
 
-            {/* credits */}
 
-<div
-  className="
-    hidden
-    md:flex
-
-    items-center
-    gap-2
-
-    px-4
-    py-2
-
-    rounded-full
-  "
-  style={{
-    background:
-      'rgba(59,130,246,0.08)',
-
-    border:
-      '1px solid rgba(59,130,246,0.12)',
-  }}
->
-
-  <div
-    className="
-      w-1.5
-      h-1.5
-      rounded-full
-      bg-cyan-400
-    "
-  />
-
-  <span
-    className="
-      text-xs
-      text-zinc-300
-    "
-    style={{
-      fontFamily:
-        'var(--font-display)',
-
-      letterSpacing:
-        '0.06em'
-    }}
-  >
-    {credits} Credits
-  </span>
-
-</div>
 
             {/* mode indicator pill */}
             <div className="hidden sm:flex items-center gap-2 counter-badge px-4 py-2 rounded-full">
@@ -458,23 +409,56 @@ style={{
                 </select>
               </div>
 
-              {/* cmd shortcut hint */}
-              <div className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl"
-                   style={{
-                     background: 'rgba(255,255,255,0.025)',
-                     border: '1px solid rgba(255,255,255,0.05)',
-                   }}>
-                <kbd className="text-[10px] text-zinc-500 px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(255,255,255,0.04)', fontFamily: 'var(--font-display)' }}>
-                  ⌘
-                </kbd>
-                <span className="text-[10px] text-zinc-600">+</span>
-                <kbd className="text-[10px] text-zinc-500 px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(255,255,255,0.04)', fontFamily: 'var(--font-display)' }}>
-                  ↵
-                </kbd>
-                <span className="text-[10px] text-zinc-600 ml-1">to generate</span>
-              </div>
+                          {/* credits */}
+
+<div
+  className="
+    hidden
+    md:flex
+
+    items-center
+    gap-2
+
+    px-4
+    py-2
+
+    rounded-full
+  "
+  style={{
+    background:
+      'rgba(59,130,246,0.08)',
+
+    border:
+      '1px solid rgba(59,130,246,0.12)',
+  }}
+>
+
+  <div
+    className="
+      w-1.5
+      h-1.5
+      rounded-full
+      bg-cyan-400
+    "
+  />
+
+  <span
+    className="
+      text-xs
+      text-zinc-300
+    "
+    style={{
+      fontFamily:
+        'var(--font-display)',
+
+      letterSpacing:
+        '0.06em'
+    }}
+  >
+    {credits} Credits
+  </span>
+
+</div>
             </div>
 
             {/* generate button */}

@@ -342,31 +342,7 @@ body {
    INPUTS
 ───────────────────────────── */
 
-.neural-input {
 
-  background:
-    rgba(17,24,39,0.75);
-
-  border:
-    1px solid rgba(255,255,255,0.06);
-
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    background 0.25s ease;
-}
-
-.neural-input:focus {
-
-  border-color:
-    rgba(59,130,246,0.45);
-
-  box-shadow:
-    0 0 0 4px rgba(59,130,246,0.08);
-
-  background:
-    rgba(17,24,39,0.9);
-}
 
 /* ─────────────────────────────
    TABS
@@ -459,4 +435,58 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ─────────────────────────────
+   TEXTAREA
+───────────────────────────── */
+
+.ai-textarea {
+
+  background:
+    rgba(17,24,39,0.75);
+
+     border-radius: 10px;
+     margin-top: 5px;
+
+  border:
+    1px solid rgba(255,255,255,0.08);
+
+  color:
+    white;
+
+  outline:
+    none;
+
+  resize:
+    none;
+
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background 0.25s ease;
+
+  backdrop-filter:
+    blur(20px);
+}
+
+.ai-textarea:hover {
+
+  border-color:
+    rgba(255,255,255,0.12);
+   
+}
+
+.ai-textarea:focus {
+
+  border-color:
+    rgba(59,130,246,0.45);
+
+  box-shadow:
+    0 0 0 4px rgba(59,130,246,0.08);
+
+  background:
+    rgba(17,24,39,0.9);
+
+    
 }
