@@ -185,3 +185,23 @@ mode switch:
     fast       → llm_combined.py
     parallel   → multi_agent_parallel.py
     research   → multi_agent.py
+
+
+
+    🧠 NOW YOU HAVE TWO FEEDBACK LAYERS
+🔹 Global Result Feedback
+Was this entire research result useful?
+
+Improves:
+
+retrieval quality
+synthesis quality
+overall ranking
+🔹 Individual Paper Feedback
+Was THIS paper useful?
+
+Improves:
+
+paper scoring
+future ranking
+recommendation quality

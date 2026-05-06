@@ -1,6 +1,10 @@
 import { useState } from "react"
 
-import { generateResearch } from "../services/api"
+import {
+  generateResearch,
+  submitGlobalFeedback
+} from "../services/api"
+
 import PaperCard from "../components/PaperCard"
 import PipelineStatus from "../components/PipelineStatus"
 import LoadingSkeleton from "../components/LoadingSkeleton"
@@ -18,6 +22,12 @@ const Home = () => {
 
   const [currentStep, setCurrentStep] = useState(-1)
 
+  const [globalFeedback, setGlobalFeedback] = useState("")
+
+  /* -----------------------------
+     GENERATE
+  ----------------------------- */
+
   const handleGenerate = async () => {
 
     if (!topic) return
@@ -26,16 +36,27 @@ const Home = () => {
 
       setLoading(true)
 
-      for(let i = 0; i < 6; i++){
+      setResult(null)
 
-  setCurrentStep(i)
+      setGlobalFeedback("")
 
-  await new Promise(resolve =>
-    setTimeout(resolve, 700)
-  )
-}
+      /* PIPELINE ANIMATION */
 
-      const data = await generateResearch(topic, mode)
+      for (let i = 0; i < 6; i++) {
+
+        setCurrentStep(i)
+
+        await new Promise(resolve =>
+          setTimeout(resolve, 700)
+        )
+      }
+
+      /* API CALL */
+
+      const data = await generateResearch(
+        topic,
+        mode
+      )
 
       console.log(data)
 
@@ -50,6 +71,28 @@ const Home = () => {
     } finally {
 
       setLoading(false)
+
+    }
+  }
+
+  /* -----------------------------
+     GLOBAL FEEDBACK
+  ----------------------------- */
+
+  const handleGlobalFeedback = async (type) => {
+
+    try {
+
+      await submitGlobalFeedback(
+        topic,
+        type
+      )
+
+      setGlobalFeedback(type)
+
+    } catch (err) {
+
+      console.log(err)
 
     }
   }
@@ -97,7 +140,10 @@ const Home = () => {
               onClick={handleGenerate}
               className="bg-blue-600 hover:bg-blue-700 px-8 py-3 rounded-xl font-semibold transition-all"
             >
-              {loading ? "Generating..." : "Generate Research"}
+              {loading
+                ? "Generating..."
+                : "Generate Research"
+              }
             </button>
 
           </div>
@@ -107,16 +153,15 @@ const Home = () => {
         {/* PIPELINE */}
 
         {loading && (
-            <PipelineStatus currentStep={currentStep} />
+          <PipelineStatus currentStep={currentStep} />
         )}
 
-        {/* LOADING SKELETON */}
+        {/* SKELETON */}
 
         {loading && (
-            <LoadingSkeleton />
+          <LoadingSkeleton />
         )}
 
-        
         {/* RESULTS */}
 
         {result && (
@@ -140,6 +185,7 @@ const Home = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`
                     px-6 py-3 rounded-2xl capitalize font-medium transition-all
+
                     ${activeTab === tab
                       ? "bg-blue-600 text-white"
                       : "bg-[#111827] border border-zinc-800 text-zinc-400 hover:text-white"
@@ -165,6 +211,60 @@ const Home = () => {
 
                 <div className="text-zinc-300 whitespace-pre-wrap leading-8 text-lg">
                   {result.summary}
+                </div>
+
+                {/* GLOBAL FEEDBACK */}
+
+                <div className="border-t border-zinc-800 pt-8 mt-8">
+
+                  <h3 className="text-xl font-semibold mb-4">
+                    Was this research result useful?
+                  </h3>
+
+                  <div className="flex gap-4 flex-wrap">
+
+                    <button
+                      onClick={() =>
+                        handleGlobalFeedback("good")
+                      }
+                      className={`
+                        px-5 py-3 rounded-xl transition-all font-medium
+
+                        ${globalFeedback === "good"
+                          ? "bg-green-700"
+                          : "bg-green-600 hover:bg-green-700"
+                        }
+                      `}
+                    >
+                      👍 Good Result
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        handleGlobalFeedback("bad")
+                      }
+                      className={`
+                        px-5 py-3 rounded-xl transition-all font-medium
+
+                        ${globalFeedback === "bad"
+                          ? "bg-red-700"
+                          : "bg-red-600 hover:bg-red-700"
+                        }
+                      `}
+                    >
+                      👎 Bad Result
+                    </button>
+
+                  </div>
+
+                  {globalFeedback && (
+
+                    <p className="text-zinc-400 mt-4 text-sm">
+                      Feedback submitted: {globalFeedback}
+                    </p>
+
+                  )}
+
                 </div>
 
               </div>

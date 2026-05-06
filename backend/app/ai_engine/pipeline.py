@@ -177,16 +177,25 @@ async def run_pipeline(topic: str, user_mode: str = None):
 
     emb_model = get_model()
 
-    # -----------------------------
-    # CACHE
-    # -----------------------------
+# -----------------------------
+# CACHE + FEEDBACK
+# -----------------------------
     feedback = get_feedback(topic)
 
-    if feedback == "bad":
-        delete_cached_result(topic)
+    bypass_cache = False
 
-    cached = get_cached_result(topic, user_mode)
-    if cached and feedback != "bad":
+    if feedback == "bad":
+        print("⚠️ Bad feedback detected")
+        print("🔄 Bypassing cache")
+
+        bypass_cache = True
+
+    cached = None
+
+    if not bypass_cache:
+        cached = get_cached_result(topic, user_mode)
+
+    if cached:
         print("⚡ CACHE HIT")
         return cached
 
