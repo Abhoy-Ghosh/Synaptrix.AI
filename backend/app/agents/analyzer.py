@@ -10,32 +10,88 @@ def analyze(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:200]}"
         for p in papers
-    ])[:2000]
+    ])[:3500]
 
     prompt = f"""
-You are a research analyst.
+You are an elite AI Research Intelligence Analyst.
 
-Topic: {topic}
+Your task is to analyze ONLY the provided research papers for the topic below.
 
-Return output STRICTLY in this format:
+========================
+RESEARCH TOPIC
+========================
+{topic}
 
-Key Patterns:
-- ...
-- ...
+========================
+STRICT INSTRUCTIONS
+========================
+- ONLY use information from the provided papers
+- Do NOT introduce unrelated domains
+- Do NOT hallucinate facts
+- If evidence is weak, explicitly mention uncertainty
+- Stay fully grounded in the paper abstracts
+- Keep insights concise, technical, and research-focused
+- Avoid generic AI buzzwords
+- Prefer specific observations over vague summaries
+- Use clean hierarchical markdown formatting
+- Output MUST be frontend-render friendly
+- Each section MUST contain bullet points
+- Keep each bullet under 2 lines
+- Maximum 5 bullets per section
 
-Trends:
-- ...
-- ...
+========================
+OUTPUT FORMAT
+========================
 
-Agreements vs Disagreements:
-- ...
+# Research Analysis
 
-Rules:
-- Use bullet points
-- Max 5 points per section
-- No extra text outside sections
+## Key Patterns
+- Pattern 1
+- Pattern 2
 
-Papers:
+## Emerging Trends
+- Trend 1
+- Trend 2
+
+## Research Agreements
+- Agreement 1
+- Agreement 2
+
+## Research Disagreements
+- Disagreement 1
+- Disagreement 2
+
+## Methodological Observations
+- Observation 1
+- Observation 2
+
+## Strategic Insights
+- Insight 1
+- Insight 2
+
+## Research Limitations
+- Limitation 1
+- Limitation 2
+
+========================
+QUALITY RULES
+========================
+
+GOOD OUTPUT:
+- "Most papers emphasize human oversight in autonomous warfare systems"
+
+BAD OUTPUT:
+- "AI is transforming industries globally"
+
+GOOD OUTPUT:
+- "Several papers discuss ethical constraints for AI-driven military decision-making"
+
+BAD OUTPUT:
+- "Healthcare datasets require preprocessing"
+
+========================
+PAPERS
+========================
 {content}
 """
 
@@ -45,19 +101,33 @@ Papers:
         if not result or len(result.strip()) < 20:
             return "Analysis not available"
 
-        # 🔥 STRUCTURE CHECK
+        # Structure validation
         if "Key Patterns" not in result:
-            print("⚠️ Analyzer format issue → fixing fallback")
+            print("⚠️ Analyzer format issue → using fallback")
 
-            return f"""
-Key Patterns:
+            return """
+# Research Analysis
+
+## Key Patterns
 - Patterns could not be clearly extracted
 
-Trends:
+## Emerging Trends
 - Trends not clearly identified
 
-Agreements vs Disagreements:
-- Mixed or unclear findings
+## Research Agreements
+- Research alignment unclear
+
+## Research Disagreements
+- Mixed or conflicting findings
+
+## Methodological Observations
+- Methodological insights unavailable
+
+## Strategic Insights
+- Strategic interpretation unavailable
+
+## Research Limitations
+- Limitations not clearly discussed
 """
 
         return result.strip()

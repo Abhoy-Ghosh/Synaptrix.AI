@@ -49,7 +49,7 @@ def retrieve_papers(topic):
     if len(s2_papers) < 3:
         print("⚠️ Weak Semantic results → using arXiv")
         try:
-            arxiv_papers = fetch_arxiv_papers(topic, max_results=7)
+            arxiv_papers = fetch_arxiv_papers(topic, max_results=10)
         except Exception as e:
             print("❌ arXiv failed:", str(e))
 

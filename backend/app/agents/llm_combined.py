@@ -11,36 +11,91 @@ def generate_full_report(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:300]}"
         for p in papers
-    ])[:2000]
+    ])[:3500]
 
     prompt = f"""
-You are a team of research experts.
+You are an elite AI Research Synthesis Engine.
 
-Topic: {topic}
+Your task is to generate a complete research intelligence report
+ONLY from the provided research papers.
 
-Return output STRICTLY in this format:
+========================
+RESEARCH TOPIC
+========================
+{topic}
 
-Key Insights:
-- ...
-- ...
+========================
+STRICT INSTRUCTIONS
+========================
+- ONLY use information from the supplied papers
+- Do NOT introduce unrelated domains
+- Do NOT hallucinate facts or methodologies
+- Stay grounded in the paper abstracts
+- Avoid generic AI statements
+- Prefer specific technical observations
+- Focus on findings, methodologies, trends, limitations, and strategic implications
+- Keep outputs concise and structured
+- Use frontend-friendly markdown formatting
+- Every section MUST contain bullet points
+- Each bullet should remain under 2 lines
+- Maximum 5 bullets per section
+- No introductory or concluding paragraphs
+- If evidence is weak, explicitly mention uncertainty
 
-Common Themes:
-- ...
-- ...
+========================
+OUTPUT FORMAT
+========================
 
-Summary:
-- 2-3 sentences
+# Research Intelligence Report
 
-Research Gaps:
-- ...
-- ...
+## Key Insights
+- Insight 1
+- Insight 2
 
-Rules:
-- Use bullet points
-- Max 5 points per section
-- No extra text outside sections
+## Common Themes
+- Theme 1
+- Theme 2
 
-Papers:
+## Emerging Trends
+- Trend 1
+- Trend 2
+
+## Research Summary
+- 2-3 concise research-focused sentences
+
+## Research Gaps
+- Gap 1
+- Gap 2
+
+## Strategic Importance
+- Strategic insight 1
+- Strategic insight 2
+
+========================
+QUALITY RULES
+========================
+
+GOOD OUTPUT:
+- "Several papers emphasize maintaining human oversight in autonomous warfare systems"
+
+BAD OUTPUT:
+- "AI is transforming many industries"
+
+GOOD OUTPUT:
+- "Research focuses heavily on ethical governance of AI-enabled military decision-making"
+
+BAD OUTPUT:
+- "Technology is rapidly evolving"
+
+GOOD OUTPUT:
+- "Limited real-world validation exists for autonomous combat decision systems"
+
+BAD OUTPUT:
+- "More studies are needed"
+
+========================
+PAPERS
+========================
 {content}
 """
 
@@ -50,22 +105,30 @@ Papers:
         if not result or len(result.strip()) < 20:
             return "Report not available"
 
-        # 🔥 STRUCTURE CHECK
+        # Structure validation
         if "Key Insights" not in result:
             print("⚠️ Fast mode format issue → using fallback")
 
-            return f"""
-Key Insights:
-- Could not extract insights reliably
+            return """
+# Research Intelligence Report
 
-Common Themes:
+## Key Insights
+- Could not reliably extract insights
+
+## Common Themes
 - Themes not clearly identified
 
-Summary:
+## Emerging Trends
+- Trends unavailable
+
+## Research Summary
 - Summary unavailable due to formatting issue
 
-Research Gaps:
-- Gaps could not be determined
+## Research Gaps
+- Research gaps could not be determined
+
+## Strategic Importance
+- Strategic interpretation unavailable
 """
 
         return result.strip()

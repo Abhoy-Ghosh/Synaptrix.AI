@@ -1,0 +1,590 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #0d0d1a;
+            font-family: monospace;
+        }
+
+        #mynetwork {
+            width: 100%;
+            height: 100vh;
+            background-color: #0d0d1a;
+        }
+
+        /* =============================
+           LEGEND
+        ============================= */
+
+        #legend {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+
+            background: rgba(13,13,26,0.92);
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+
+            padding: 16px 20px;
+
+            color: #ccccee;
+            font-size: 13px;
+
+            z-index: 9999;
+
+            backdrop-filter: blur(6px);
+            min-width: 170px;
+
+            box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+        }
+
+        #legend b {
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: white;
+        }
+
+        #legend hr {
+            border: none;
+            border-top: 1px solid #2a2a4a;
+            margin: 10px 0;
+        }
+
+        .dot {
+            font-size: 16px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .row {
+            margin: 5px 0;
+        }
+
+        /* =============================
+           INFO PANEL
+        ============================= */
+
+        #infoPanel {
+            position: fixed;
+            left: 18px;
+            top: 18px;
+
+            width: 320px;
+            min-height: 180px;
+            max-height: 80vh;
+
+            overflow-y: auto;
+
+            background: rgba(13,13,26,0.96);
+            border: 1px solid #2a2a4a;
+            border-radius: 14px;
+
+            padding: 18px;
+
+            z-index: 9999;
+
+            color: #dfe6ff;
+
+            box-shadow: 0 6px 28px rgba(0,0,0,0.6);
+
+            backdrop-filter: blur(8px);
+        }
+
+        #infoTitle {
+            font-size: 16px;
+            color: white;
+            margin-bottom: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        #infoContent {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #aab4d6;
+        }
+
+        .info-section {
+            margin-bottom: 14px;
+        }
+
+        .info-label {
+            color: #6fa8ff;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        ul {
+            padding-left: 18px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id="infoPanel">
+    <div id="infoTitle">Node Information</div>
+
+    <div id="infoContent">
+        Click a node to inspect architecture details.
+    </div>
+</div>
+
+<div id="legend">
+    <b>⬡ LAYERS</b>
+    <hr>
+
+    <div class="row">
+        <span class="dot" style="color:#ff4d4d">●</span> Core
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#4da6ff">●</span> Agents
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#66cc66">●</span> Services
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#ffcc00">●</span> Storage
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#ff66cc">●</span> Feedback
+    </div>
+
+    <hr>
+
+    <div class="row" style="color:#5566bb">
+        ── Pipeline flow
+    </div>
+</div>
+
+<div id="mynetwork"></div>
+
+<script>
+
+    // ==========================================
+    // NODES
+    // ==========================================
+
+    const nodes = new vis.DataSet([
+
+        {
+            id: "query",
+            label: "query",
+            shape: "circle",
+            size: 42,
+            color: "#ff4d4d",
+            font: { color: "white" }
+        },
+
+        {
+            id: "retriever",
+            label: "retriever",
+            shape: "circle",
+            size: 30,
+            color: "#4da6ff",
+            font: { color: "white" }
+        },
+
+        {
+            id: "vector_store",
+            label: "vector\nstore",
+            shape: "circle",
+            size: 24,
+            color: "#ffcc00",
+            font: { color: "white" }
+        },
+
+        {
+            id: "cache",
+            label: "cache",
+            shape: "circle",
+            size: 24,
+            color: "#ffcc00",
+            font: { color: "white" }
+        },
+
+        {
+            id: "insight_extractor",
+            label: "insight\nextractor",
+            shape: "circle",
+            size: 42,
+            color: "#ff4d4d",
+            font: { color: "white" }
+        },
+
+        {
+            id: "summarizer",
+            label: "summarizer",
+            shape: "circle",
+            size: 30,
+            color: "#4da6ff",
+            font: { color: "white" }
+        },
+
+        {
+            id: "analyzer",
+            label: "analyzer",
+            shape: "circle",
+            size: 30,
+            color: "#4da6ff",
+            font: { color: "white" }
+        },
+
+        {
+            id: "gap_finder",
+            label: "gap\nfinder",
+            shape: "circle",
+            size: 30,
+            color: "#4da6ff",
+            font: { color: "white" }
+        },
+
+        {
+            id: "llm_service",
+            label: "llm\nservice",
+            shape: "circle",
+            size: 36,
+            color: "#66cc66",
+            font: { color: "white" }
+        },
+
+        {
+            id: "output",
+            label: "output",
+            shape: "circle",
+            size: 42,
+            color: "#ff4d4d",
+            font: { color: "white" }
+        },
+
+        {
+            id: "feedback",
+            label: "feedback",
+            shape: "circle",
+            size: 26,
+            color: "#ff66cc",
+            font: { color: "white" }
+        }
+    ]);
+
+
+    // ==========================================
+    // EDGES
+    // ==========================================
+
+    const edges = new vis.DataSet([
+
+        { from: "query", to: "retriever" },
+        { from: "retriever", to: "vector_store" },
+        { from: "retriever", to: "cache" },
+        { from: "vector_store", to: "insight_extractor" },
+        { from: "cache", to: "insight_extractor" },
+        { from: "insight_extractor", to: "summarizer" },
+        { from: "insight_extractor", to: "analyzer" },
+        { from: "insight_extractor", to: "gap_finder" },
+        { from: "summarizer", to: "llm_service" },
+        { from: "analyzer", to: "llm_service" },
+        { from: "gap_finder", to: "llm_service" },
+        { from: "llm_service", to: "output" },
+        { from: "output", to: "feedback" }
+
+    ]);
+
+
+    // ==========================================
+    // NETWORK OPTIONS
+    // ==========================================
+
+    const options = {
+
+        physics: {
+            enabled: true,
+            solver: "forceAtlas2Based",
+
+            forceAtlas2Based: {
+                gravitationalConstant: -160,
+                centralGravity: 0.03,
+                springLength: 200,
+                springConstant: 0.05,
+                damping: 0.9,
+                avoidOverlap: 1.0
+            },
+
+            stabilization: {
+                enabled: true,
+                iterations: 500,
+                updateInterval: 10,
+                fit: true
+            }
+        },
+
+        edges: {
+            arrows: {
+                to: {
+                    enabled: true,
+                    scaleFactor: 0.7
+                }
+            },
+
+            width: 2,
+
+            color: {
+                color: "#5566bb",
+                highlight: "#ffffff",
+                hover: "#aaaaff"
+            },
+
+            smooth: {
+                type: "continuous",
+                roundness: 0.2
+            }
+        },
+
+        nodes: {
+            borderWidth: 2,
+            borderWidthSelected: 4,
+
+            shadow: {
+                enabled: true,
+                color: "rgba(0,0,0,0.5)",
+                size: 10
+            },
+
+            font: {
+                face: "monospace",
+                size: 13,
+                color: "white"
+            }
+        },
+
+        interaction: {
+            hover: true,
+            dragNodes: true,
+            zoomView: true,
+            tooltipDelay: 60
+        }
+    };
+
+
+    // ==========================================
+    // CREATE NETWORK
+    // ==========================================
+
+    const container = document.getElementById("mynetwork");
+
+    const data = {
+        nodes: nodes,
+        edges: edges
+    };
+
+    const network = new vis.Network(container, data, options);
+
+
+    // ==========================================
+    // DISABLE PHYSICS AFTER STABILIZATION
+    // ==========================================
+
+    setTimeout(function(){
+        network.setOptions({
+            physics: {
+                enabled: false
+            }
+        });
+    }, 4000);
+
+
+    // ==========================================
+    // NODE INFORMATION DATABASE
+    // ==========================================
+
+    const nodeInfo = {
+
+        query: {
+            title: "QUERY NODE",
+            layer: "Core Layer",
+            purpose: "Entry point of the research pipeline.",
+            details: [
+                "Receives user research topic",
+                "Initializes retrieval workflow",
+                "Starts orchestration pipeline"
+            ]
+        },
+
+        retriever: {
+            title: "RETRIEVER AGENT",
+            layer: "Agent Layer",
+            purpose: "Fetches relevant research papers.",
+            details: [
+                "Uses Semantic Scholar API",
+                "Uses arXiv fallback",
+                "Filters top relevant papers"
+            ]
+        },
+
+        vector_store: {
+            title: "VECTOR STORE",
+            layer: "Storage Layer",
+            purpose: "Stores semantic embeddings.",
+            details: [
+                "Supports semantic search",
+                "Stores vector representations",
+                "Improves contextual retrieval"
+            ]
+        },
+
+        cache: {
+            title: "CACHE SYSTEM",
+            layer: "Storage Layer",
+            purpose: "Reduces repeated API and LLM calls.",
+            details: [
+                "Stores previous outputs",
+                "Improves response speed",
+                "Reduces token usage"
+            ]
+        },
+
+        insight_extractor: {
+            title: "INSIGHT EXTRACTOR",
+            layer: "Core Intelligence",
+            purpose: "Extracts structured research insights.",
+            details: [
+                "Extracts keywords",
+                "Finds technical insights",
+                "Builds structured research context"
+            ]
+        },
+
+        summarizer: {
+            title: "SUMMARIZER AGENT",
+            layer: "Research Agent",
+            purpose: "Creates high-level summaries.",
+            details: [
+                "Builds concise summaries",
+                "Finds common themes",
+                "Extracts important findings"
+            ]
+        },
+
+        analyzer: {
+            title: "ANALYZER AGENT",
+            layer: "Research Agent",
+            purpose: "Performs deeper research reasoning.",
+            details: [
+                "Detects research patterns",
+                "Finds agreements/disagreements",
+                "Identifies trends"
+            ]
+        },
+
+        gap_finder: {
+            title: "GAP FINDER",
+            layer: "Research Agent",
+            purpose: "Finds unexplored research areas.",
+            details: [
+                "Detects research limitations",
+                "Finds future directions",
+                "Identifies strategic opportunities"
+            ]
+        },
+
+        llm_service: {
+            title: "LLM SERVICE",
+            layer: "Service Layer",
+            purpose: "Centralized AI inference gateway.",
+            details: [
+                "Gemini primary model",
+                "Groq fallback model",
+                "Caching + grounding logic"
+            ]
+        },
+
+        output: {
+            title: "OUTPUT NODE",
+            layer: "Core Layer",
+            purpose: "Final research intelligence output.",
+            details: [
+                "Combines agent outputs",
+                "Builds final research report",
+                "Returns structured insights"
+            ]
+        },
+
+        feedback: {
+            title: "FEEDBACK SYSTEM",
+            layer: "Feedback Layer",
+            purpose: "Captures user evaluation signals.",
+            details: [
+                "Stores user feedback",
+                "Supports ranking improvement",
+                "Improves future recommendations"
+            ]
+        }
+    };
+
+
+    // ==========================================
+    // CLICK HANDLER
+    // ==========================================
+
+    network.on("click", function(params){
+
+        if(params.nodes.length > 0){
+
+            const nodeId = params.nodes[0];
+
+            const panel = document.getElementById("infoContent");
+
+            const info = nodeInfo[nodeId];
+
+            if(info){
+
+                panel.innerHTML = `
+
+                    <div class="info-section">
+                        <div class="info-label">Layer</div>
+                        ${info.layer}
+                    </div>
+
+                    <div class="info-section">
+                        <div class="info-label">Purpose</div>
+                        ${info.purpose}
+                    </div>
+
+                    <div class="info-section">
+                        <div class="info-label">Responsibilities</div>
+
+                        <ul>
+                            ${info.details.map(d => `<li>${d}</li>`).join("")}
+                        </ul>
+                    </div>
+                `;
+
+                document.getElementById("infoTitle").innerText = info.title;
+            }
+        }
+    });
+
+</script>
+
+</body>
+</html>
+```

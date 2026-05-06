@@ -3,27 +3,33 @@ from app.agents.clusterer import cluster_papers
 
 
 def synthesize(topic, papers):
+
     print("🧠 Cluster-based synthesis working...")
 
     if not papers:
         return "No data available"
 
-    # -----------------------------
-    # STEP 1: CLUSTER
-    # -----------------------------
+    # =========================================================
+    # STEP 1 — CLUSTER PAPERS
+    # =========================================================
     clusters = cluster_papers(papers)
 
     cluster_summaries = []
 
-    # -----------------------------
-    # STEP 2: SUMMARIZE EACH CLUSTER
-    # -----------------------------
+    # =========================================================
+    # STEP 2 — BUILD CLUSTER SUMMARIES
+    # =========================================================
     for idx, cluster in enumerate(clusters):
+
         points = []
 
         for p in cluster:
+
             insights = p.get("insights", {})
-            points.extend(insights.get("points", []))
+
+            points.extend(
+                insights.get("points", [])
+            )
 
         unique_points = list(set(points))[:10]
 
@@ -33,52 +39,119 @@ def synthesize(topic, papers):
             "points": unique_points
         })
 
-    # -----------------------------
-    # STEP 3: BUILD INPUT
-    # -----------------------------
+    # =========================================================
+    # STEP 3 — BUILD SYNTHESIS CONTEXT
+    # =========================================================
     content = ""
 
     for c in cluster_summaries:
+
         content += f"""
+
 Cluster {c['cluster_id']} (size: {c['size']}):
-- {'; '.join(c['points'])}
+
 """
 
-    content = content[:3000]
+        # IMPORTANT:
+        # preserve semantic structure
+        for point in c["points"]:
 
-    # -----------------------------
-    # STEP 4: FINAL SYNTHESIS
-    # -----------------------------
+            content += f"- {point}\n"
+
+        content += "\n"
+
+    # Larger context for synthesis reasoning
+    content = content[:5000]
+
+    # =========================================================
+    # STEP 4 — SYNTHESIS PROMPT
+    # =========================================================
     prompt = f"""
-You are an expert research synthesizer.
+You are an elite AI Research Synthesis Engine.
 
-Topic: {topic}
+Your task is to synthesize research intelligence
+ONLY from the provided cluster summaries.
 
-Clusters represent groups of similar papers.
+RESEARCH TOPIC:
+{topic}
 
+INSTRUCTIONS:
+- ONLY use the supplied cluster information
+- Stay grounded in the cluster insights
+- Compare clusters instead of repeating points
+- Identify similarities and differences
+- Highlight recurring research directions
+- Detect conflicting approaches if present
+- Avoid generic AI statements
+- Keep outputs concise and technical
+- Use clean markdown formatting
+- Every section MUST contain bullet points
+- Maximum 5 bullets per section
+
+OUTPUT FORMAT:
+
+# Cluster Intelligence
+
+## Cluster Relationships
+- ...
+
+## Contrasting Research Directions
+- ...
+
+## Emerging Trends
+- ...
+
+## Cross-Domain Insights
+- ...
+
+## Strategic Observations
+- ...
+
+## Unified Research Understanding
+- 2-3 concise synthesis sentences
+
+CLUSTER DATA:
 {content}
-
-Generate:
-
-1. Cluster-wise Insights
-2. Differences Between Clusters
-3. Overall Trends
-4. Final Unified Understanding
-
-Rules:
-- Compare clusters (not individual points)
-- Highlight contradictions between clusters
-- Avoid repetition
 """
 
     try:
+
         result = call_llm(prompt)
 
         if not result or len(result.strip()) < 20:
             return "Synthesis not available"
 
-        return result
+        # =====================================================
+        # DEBUG RAW OUTPUT
+        # =====================================================
+        print("\n============= SYNTHESIS RAW =============\n")
+        print(result)
+        print("\n=========================================\n")
+
+        # =====================================================
+        # RELAXED VALIDATION
+        # =====================================================
+        required_sections = [
+            "cluster relationships",
+            "emerging trends",
+            "strategic observations"
+        ]
+
+        normalized = result.lower()
+
+        if not all(
+            section in normalized
+            for section in required_sections
+        ):
+
+            print("⚠️ Synthesis structure incomplete")
+
+            return result.strip()
+
+        return result.strip()
 
     except Exception as e:
+
         print("⚠️ Synthesis error:", str(e))
+
         return "Synthesis failed"

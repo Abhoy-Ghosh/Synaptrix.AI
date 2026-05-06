@@ -18,26 +18,70 @@ def extract_insights(abstract: str):
     # PROMPT
     # -----------------------------
     prompt = f"""
-Return ONLY valid JSON. No explanation. No text outside JSON.
+You are an elite AI Research Insight Extraction Engine.
 
-Format:
+Your task is to extract ONLY research-grounded insights from the provided abstract.
+
+STRICT RULES:
+- Return ONLY valid JSON
+- No markdown
+- No explanation
+- No text outside JSON
+- ONLY use information from the abstract
+- Do NOT hallucinate missing details
+- Do NOT introduce unrelated domains
+- Avoid generic AI statements
+- Keep outputs concise and technical
+- Focus on methodologies, findings, contributions, limitations, or strategic relevance
+- Keywords must be directly relevant to the abstract
+- If information is weak, keep outputs minimal
+
+OUTPUT FORMAT:
 {{
-  "points": ["point1", "point2"],
-  "keywords": ["k1", "k2"],
-  "why": "one sentence"
+  "points": [
+    "short technical insight",
+    "short technical insight"
+  ],
+  "keywords": [
+    "keyword1",
+    "keyword2"
+  ],
+  "why": "one concise sentence explaining research importance"
 }}
 
-Rules:
-- Points: 5-6 bullets, short and clear
-- Keywords: 5-10 relevant terms
-- Why: 1 simple sentence
+QUALITY EXAMPLES:
 
-Abstract:
+GOOD POINT:
+"Paper discusses ethical oversight in autonomous AI systems"
+
+BAD POINT:
+"AI is changing the future"
+
+GOOD KEYWORD:
+"cognitive warfare"
+
+BAD KEYWORD:
+"technology"
+
+GOOD WHY:
+"This research highlights challenges in maintaining human control over AI-driven decision systems."
+
+BAD WHY:
+"This paper is very useful."
+
+RULES:
+- points: 4-6 concise insights
+- keywords: 5-10 technical terms
+- why: exactly 1 sentence
+- Do not repeat the same idea
+- Avoid filler words
+
+ABSTRACT:
 {abstract}
 """
 
     # -----------------------------
-    # RETRY LOOP (CRITICAL)
+    # RETRY LOOP
     # -----------------------------
     response = None
 
@@ -68,13 +112,13 @@ Abstract:
     response = response.strip()
 
     # -----------------------------
-    # PARSE JSON (SAFE)
+    # SAFE JSON PARSE
     # -----------------------------
     try:
         data = json.loads(response)
 
     except:
-        # try extracting JSON block
+        # Try extracting JSON block
         start = response.find("{")
         end = response.rfind("}") + 1
 
@@ -88,6 +132,7 @@ Abstract:
         try:
             json_str = response[start:end]
             data = json.loads(json_str)
+
         except:
             return {
                 "points": [abstract[:120] + "..."],

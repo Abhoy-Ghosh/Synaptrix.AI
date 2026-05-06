@@ -10,33 +10,89 @@ def find_gaps(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:200]}"
         for p in papers
-    ])[:2000]
+    ])[:3500]
 
     prompt = f"""
-You are a research strategist.
+You are an elite AI Research Gap Analyst and Research Strategy Expert.
 
-Topic: {topic}
+Your task is to identify research gaps, limitations, and future opportunities
+ONLY from the provided research papers.
 
-Return output STRICTLY in this format:
+========================
+RESEARCH TOPIC
+========================
+{topic}
 
-Research Gaps:
-- ...
-- ...
+========================
+STRICT INSTRUCTIONS
+========================
+- ONLY use information from the provided papers
+- Do NOT introduce unrelated domains
+- Do NOT hallucinate missing research areas
+- Stay grounded in the supplied abstracts
+- If evidence is weak, explicitly mention uncertainty
+- Focus on missing methodologies, unanswered questions, weak evaluations, scalability issues, ethical concerns, or deployment limitations
+- Avoid generic AI statements
+- Prefer concrete technical observations
+- Keep outputs concise and structured
+- Use frontend-friendly hierarchical markdown
+- Every section MUST contain bullet points
+- Maximum 5 bullets per section
+- Each bullet should remain under 2 lines
+- No paragraph explanations
+- No introductory or concluding text
 
-Future Directions:
-- ...
-- ...
+========================
+OUTPUT FORMAT
+========================
 
-Limitations:
-- ...
-- ...
+# Research Gap Analysis
 
-Rules:
-- Use bullet points
-- Max 5 points per section
-- No extra text outside sections
+## Research Gaps
+- Gap 1
+- Gap 2
 
-Papers:
+## Future Research Directions
+- Direction 1
+- Direction 2
+
+## Methodological Weaknesses
+- Weakness 1
+- Weakness 2
+
+## Deployment Challenges
+- Challenge 1
+- Challenge 2
+
+## Strategic Opportunities
+- Opportunity 1
+- Opportunity 2
+
+========================
+QUALITY RULES
+========================
+
+GOOD OUTPUT:
+- "Most papers lack real-world deployment validation for autonomous military systems"
+
+BAD OUTPUT:
+- "AI still has many challenges"
+
+GOOD OUTPUT:
+- "Limited discussion exists around adversarial robustness in AI warfare systems"
+
+BAD OUTPUT:
+- "Technology is evolving rapidly"
+
+GOOD OUTPUT:
+- "Few studies evaluate long-term ethical implications of autonomous decision-making"
+
+BAD OUTPUT:
+- "More research is needed"
+
+========================
+PAPERS
+========================
 {content}
 """
 
@@ -46,19 +102,27 @@ Papers:
         if not result or len(result.strip()) < 20:
             return "Gap analysis not available"
 
-        # 🔥 STRUCTURE VALIDATION
+        # Structure validation
         if "Research Gaps" not in result:
             print("⚠️ Gap format issue → using fallback")
 
-            return f"""
-Research Gaps:
-- Could not clearly identify gaps
+            return """
+# Research Gap Analysis
 
-Future Directions:
-- Further research needed
+## Research Gaps
+- Could not clearly identify research gaps
 
-Limitations:
-- Current literature insufficient for detailed analysis
+## Future Research Directions
+- Additional investigation required
+
+## Methodological Weaknesses
+- Methodological insights unavailable
+
+## Deployment Challenges
+- Deployment-related findings unclear
+
+## Strategic Opportunities
+- Strategic opportunities not clearly identified
 """
 
         return result.strip()

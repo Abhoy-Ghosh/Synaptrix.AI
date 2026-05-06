@@ -205,3 +205,15 @@ Improves:
 paper scoring
 future ranking
 recommendation quality
+
+pdf
+token
+Docker
+user manual
+
+
+cold start
+relevance score 
+user capacity 300
+
+modular orchestration architecture
