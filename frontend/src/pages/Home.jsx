@@ -8,7 +8,7 @@ import {
 import PaperCard from "../components/PaperCard"
 import PipelineStatus from "../components/PipelineStatus"
 import LoadingSkeleton from "../components/LoadingSkeleton"
-
+import RichTextRenderer from "../components/RichTextRenderer"
 /* ── tiny helpers ── */
 const TAB_META = {
   summary:   { label: "Summary",   icon: "◈", desc: "AI-generated synthesis" },
@@ -46,10 +46,23 @@ const Home = () => {
       setLoading(true)
       setResult(null)
       setGlobalFeedback("")
-      for (let i = 0; i < 6; i++) {
-        setCurrentStep(i)
-        await new Promise(r => setTimeout(r, 700))
-      }
+      const timings = [
+  1400,
+  2200,
+  1800,
+  2400,
+  2000,
+  1500
+]
+
+for (let i = 0; i < 6; i++) {
+
+  setCurrentStep(i)
+
+  await new Promise((r) =>
+    setTimeout(r, timings[i])
+  )
+}
       const data = await generateResearch(topic, mode)
       console.log(data)
       setResult(data)
@@ -97,7 +110,7 @@ const Home = () => {
       {/* ─── STICKY NAVBAR ─── */}
       <nav className={`sticky top-0 z-50 navbar-glass ${scrolled ? "scrolled" : ""}`}
            style={{ height: 'var(--nav-height)' }}>
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
 
           {/* LEFT — logo + brand */}
           <div className="flex items-center gap-4">
@@ -155,7 +168,23 @@ const Home = () => {
       </nav>
 
       {/* ─── MAIN ─── */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div
+  className="
+    w-full
+
+    max-w-[1200px]
+
+    mx-auto
+
+    px-6
+    sm:px-8
+    md:px-10
+    lg:px-14
+    xl:px-20
+
+    py-16
+  "
+>
 
         {/* ─── HERO ─── */}
         <div className="mb-20 relative">
@@ -410,10 +439,12 @@ const Home = () => {
                       </div>
                     </div>
 
-                    <div className="result-prose whitespace-pre-wrap"
-                         style={{ maxWidth: '80ch' }}>
-                      {result.summary}
-                    </div>
+                  <div style={{ maxWidth: '90ch' }}>
+    <RichTextRenderer
+        text={result.summary}
+        type="summary"
+    />
+</div>
 
                     {/* FEEDBACK */}
                     <div className="feedback-section rounded-2xl p-8 mt-10 -mx-2">
@@ -499,9 +530,9 @@ const Home = () => {
                         <span>⬡</span>
                       </div>
                     </div>
-                    <div className="result-prose whitespace-pre-wrap" style={{ maxWidth: '80ch' }}>
-                      {result.analysis}
-                    </div>
+                   <div style={{ maxWidth: '90ch' }}>
+    <RichTextRenderer text={result.analysis} />
+</div>
                   </div>
                 </div>
               )}
@@ -525,9 +556,12 @@ const Home = () => {
                         <span>◇</span>
                       </div>
                     </div>
-                    <div className="result-prose whitespace-pre-wrap" style={{ maxWidth: '80ch' }}>
-                      {result.gaps}
-                    </div>
+                    <div style={{ maxWidth: '90ch' }}>
+    <RichTextRenderer
+        text={result.gaps}
+        type="gaps"
+    />
+</div>
                   </div>
                 </div>
               )}
@@ -551,9 +585,12 @@ const Home = () => {
                         <span>⊕</span>
                       </div>
                     </div>
-                    <div className="result-prose whitespace-pre-wrap" style={{ maxWidth: '80ch' }}>
-                      {result.synthesis}
-                    </div>
+                    <div style={{ maxWidth: '90ch' }}>
+   <RichTextRenderer
+      text={result.synthesis}
+      type="synthesis"
+   />
+</div>
                   </div>
                 </div>
               )}

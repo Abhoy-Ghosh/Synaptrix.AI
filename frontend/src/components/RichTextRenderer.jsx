@@ -1,12 +1,139 @@
-const RichTextRenderer = ({ text }) => {
+const RichTextRenderer = ({
+  text,
+  type = "default"
+}) => {
 
   if (!text) return null
 
   const lines = text.split("\n")
 
+  /* =========================================
+     AGENT THEMES
+  ========================================= */
+
+  const THEMES = {
+
+    summary: {
+      border: "border-cyan-500/20",
+      glow: "bg-cyan-500/10",
+      accent: "text-cyan-300",
+      icon: "◈"
+    },
+
+    analysis: {
+      border: "border-violet-500/20",
+      glow: "bg-violet-500/10",
+      accent: "text-violet-300",
+      icon: "⬡"
+    },
+
+    gaps: {
+      border: "border-red-500/20",
+      glow: "bg-red-500/10",
+      accent: "text-red-300",
+      icon: "◇"
+    },
+
+    synthesis: {
+      border: "border-emerald-500/20",
+      glow: "bg-emerald-500/10",
+      accent: "text-emerald-300",
+      icon: "⊕"
+    },
+
+    default: {
+      border: "border-white/10",
+      glow: "bg-white/5",
+      accent: "text-white",
+      icon: "•"
+    }
+  }
+
+  const theme =
+    THEMES[type] || THEMES.default
+
+
   return (
 
-    <div className="space-y-5 fade-in">
+    <div
+      className="
+        relative
+        space-y-7
+        fade-in
+      "
+    >
+
+      {/* =====================================
+          AGENT HEADER
+      ===================================== */}
+
+      <div
+        className="
+          flex
+          items-center
+          gap-4
+          mb-10
+        "
+      >
+
+        <div
+          className={`
+            flex
+            items-center
+            justify-center
+
+            w-12
+            h-12
+
+            rounded-2xl
+
+            border
+            ${theme.border}
+
+            bg-white/[0.03]
+
+            backdrop-blur-xl
+
+            shadow-[0_10px_40px_rgba(0,0,0,0.35)]
+
+            text-xl
+            ${theme.accent}
+          `}
+        >
+          {theme.icon}
+        </div>
+
+        <div>
+
+          <div
+            className="
+              uppercase
+              tracking-[0.28em]
+              text-[10px]
+              text-zinc-500
+              mb-1
+            "
+          >
+            {type} intelligence
+          </div>
+
+          <div
+            className={`
+              text-sm
+              ${theme.accent}
+            `}
+          >
+            Multi-agent semantic reasoning layer
+          </div>
+
+        </div>
+
+      </div>
+
+
+      {/* =====================================
+          CONTENT
+      ===================================== */}
 
       {lines.map((line, idx) => {
 
@@ -24,48 +151,59 @@ const RichTextRenderer = ({ text }) => {
           )
         }
 
-        /* -----------------------------------
+        /* =====================================
            MAIN TITLE
-        ----------------------------------- */
+        ===================================== */
 
         if (idx === 0) {
-
-          return (
-
-            <h1
-              key={idx}
-              className="
-                text-4xl
-                md:text-5xl
-                font-semibold
-                tracking-tight
-                leading-tight
-                text-white
-                mb-10
-              "
-            >
-              {trimmed}
-            </h1>
-          )
-        }
-
-        /* -----------------------------------
-           ## HEADINGS
-        ----------------------------------- */
-
-        if (
-          trimmed.startsWith("## ")
-        ) {
-
-          const clean = trimmed
-            .replace("## ", "")
 
           return (
 
             <div
               key={idx}
               className="
-                pt-10
+                mb-14
+              "
+            >
+
+              <h1
+                className="
+                  text-[42px]
+                  md:text-[64px]
+
+                  max-w-5xl
+
+                  font-semibold
+                  tracking-tight
+                  leading-[1.05]
+
+                  text-white
+                "
+              >
+                {trimmed.replace("# ", "")}
+              </h1>
+
+            </div>
+          )
+        }
+
+        /* =====================================
+           ## HEADINGS
+        ===================================== */
+
+        if (
+          trimmed.startsWith("## ")
+        ) {
+
+          const clean =
+            trimmed.replace("## ", "")
+
+          return (
+
+            <div
+              key={idx}
+              className="
+                pt-14
                 pb-2
               "
             >
@@ -74,29 +212,32 @@ const RichTextRenderer = ({ text }) => {
                 className="
                   flex
                   items-center
-                  gap-3
-                  mb-4
+                  gap-4
+                  mb-5
                 "
               >
 
                 <div
-                  className="
-                    w-2
-                    h-2
+                  className={`
+                    w-2.5
+                    h-2.5
                     rounded-full
-                    bg-blue-400
-                    shadow-[0_0_12px_rgba(96,165,250,0.9)]
-                  "
+                    ${theme.glow}
+
+                    shadow-[0_0_24px_rgba(255,255,255,0.25)]
+                  `}
                 />
 
                 <h2
-                  className="
-                    text-2xl
-                    md:text-3xl
+                  className={`
+                    text-[28px]
+                    md:text-[34px]
+
                     font-semibold
                     tracking-tight
-                    text-white
-                  "
+
+                    ${theme.accent}
+                  `}
                 >
                   {getSectionIcon(clean)} {clean}
                 </h2>
@@ -106,10 +247,12 @@ const RichTextRenderer = ({ text }) => {
               <div
                 className="
                   h-px
-                  bg-gradient-to-r
-                  from-blue-500/30
-                  to-transparent
                   w-full
+
+                  bg-gradient-to-r
+                  from-white/10
+                  via-white/5
+                  to-transparent
                 "
               />
 
@@ -117,9 +260,9 @@ const RichTextRenderer = ({ text }) => {
           )
         }
 
-        /* -----------------------------------
-           BULLETS
-        ----------------------------------- */
+        /* =====================================
+           BULLET CARDS
+        ===================================== */
 
         if (
           trimmed.startsWith("- ") ||
@@ -143,49 +286,106 @@ const RichTextRenderer = ({ text }) => {
               "
             >
 
-              {/* GLOW */}
+              {/* AMBIENT GLOW */}
 
               <div
-                className="
+                className={`
                   absolute
                   inset-0
-                  rounded-2xl
+
+                  rounded-[32px]
+
                   opacity-0
                   group-hover:opacity-100
+
                   transition
-                  duration-500
-                  blur-xl
-                  bg-blue-500/10
-                "
+                  duration-700
+
+                  blur-2xl
+
+                  ${theme.glow}
+                `}
               />
 
               {/* CARD */}
 
               <div
-                className="
+                className={`
                   relative
-                  rounded-2xl
+
+                  overflow-hidden
+
+                  rounded-[30px]
+
                   border
-                  border-white/5
-                  bg-gradient-to-br
-                  from-white/[0.03]
-                  to-white/[0.01]
-                  px-5
-                  py-5
-                  hover:border-blue-500/20
+                  ${theme.border}
+
+                  bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))]
+
+                  backdrop-blur-2xl
+
+                  px-8
+                  py-7
+
+                  shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_20px_80px_rgba(0,0,0,0.35)]
+
+                  hover:translate-y-[-3px]
+
+                  hover:shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_40px_120px_rgba(0,0,0,0.45)]
+
                   transition-all
-                  duration-300
-                "
+                  duration-500
+                `}
               >
+
+                {/* TOP LIGHT */}
+
+                <div
+                  className={`
+                    absolute
+                    top-0
+                    left-0
+
+                    w-full
+                    h-px
+
+                    ${theme.glow}
+
+                    opacity-40
+                  `}
+                />
+
+                {/* GRID TEXTURE */}
+
+                <div
+                  className="
+                    absolute
+                    inset-0
+
+                    opacity-[0.03]
+
+                    pointer-events-none
+                  "
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
+
+                    backgroundSize:
+                      "24px 24px"
+                  }}
+                />
 
                 {/* CATEGORY */}
 
                 <div
                   className="
+                    relative
+
                     flex
                     items-center
                     gap-3
-                    mb-3
+
+                    mb-5
                   "
                 >
 
@@ -193,18 +393,25 @@ const RichTextRenderer = ({ text }) => {
                     className={`
                       w-3
                       h-3
+
                       rounded-full
+
                       ${category.color}
-                      shadow-lg
+
+                      shadow-[0_0_20px_rgba(255,255,255,0.4)]
                     `}
                   />
 
                   <div
                     className="
-                      text-xs
+                      text-[10px]
+
                       uppercase
-                      tracking-widest
-                      text-slate-400
+
+                      tracking-[0.28em]
+
+                      text-zinc-500
+
                       font-semibold
                     "
                   >
@@ -213,14 +420,19 @@ const RichTextRenderer = ({ text }) => {
 
                 </div>
 
-                {/* CONTENT */}
+                {/* TEXT */}
 
                 <div
                   className="
-                    text-zinc-200
-                    leading-8
-                    text-[15px]
-                    md:text-base
+                    relative
+
+                    text-zinc-100
+
+                    leading-[2]
+
+                    text-[16px]
+
+                    font-[425]
                   "
                 >
                   {highlightKeywords(bulletText)}
@@ -232,9 +444,9 @@ const RichTextRenderer = ({ text }) => {
           )
         }
 
-        /* -----------------------------------
-           NORMAL TEXT
-        ----------------------------------- */
+        /* =====================================
+           PARAGRAPHS
+        ===================================== */
 
         return (
 
@@ -242,13 +454,15 @@ const RichTextRenderer = ({ text }) => {
             key={idx}
             className="
               text-zinc-300
-              leading-8
-              text-[15px]
-              md:text-base
+
+              leading-[2]
+
+              text-[16px]
+
               tracking-[0.01em]
             "
             style={{
-              maxWidth: "78ch"
+              maxWidth: "92ch"
             }}
           >
             {trimmed.replace(/\*\*/g, "")}
@@ -277,7 +491,7 @@ function detectCategory(text) {
 
     return {
       label: "Performance",
-      color: "bg-green-400"
+      color: "bg-emerald-400"
     }
   }
 
@@ -288,8 +502,8 @@ function detectCategory(text) {
   ) {
 
     return {
-      label: "Deployment",
-      color: "bg-blue-400"
+      label: "Infrastructure",
+      color: "bg-cyan-400"
     }
   }
 
@@ -312,7 +526,7 @@ function detectCategory(text) {
 
     return {
       label: "Agents",
-      color: "bg-purple-400"
+      color: "bg-violet-400"
     }
   }
 
@@ -323,13 +537,13 @@ function detectCategory(text) {
 
     return {
       label: "Optimization",
-      color: "bg-cyan-400"
+      color: "bg-sky-400"
     }
   }
 
   return {
     label: "Research",
-    color: "bg-slate-400"
+    color: "bg-zinc-400"
   }
 }
 
@@ -342,48 +556,31 @@ function getSectionIcon(title) {
 
   const map = {
 
-    "Key Insights": "💡",
+  "Key Insights": "◈",
+  "Common Themes": "◎",
+  "Emerging Focus Areas": "△",
+  "Summary": "—",
 
-    "Common Themes": "🧩",
+  "Key Patterns": "◉",
+  "Emerging Trends": "↗",
+  "Research Agreements": "⊕",
+  "Research Disagreements": "⊗",
+  "Methodological Observations": "◇",
+  "Strategic Insights": "✦",
+  "Research Limitations": "◌",
 
-    "Emerging Focus Areas": "🚀",
+  "Research Gaps": "⊘",
+  "Future Research Directions": "→",
+  "Methodological Weaknesses": "⌁",
+  "Deployment Challenges": "▣",
+  "Strategic Opportunities": "◬",
 
-    "Summary": "📄",
-
-    "Key Patterns": "🔍",
-
-    "Emerging Trends": "📈",
-
-    "Research Agreements": "🤝",
-
-    "Research Disagreements": "⚔",
-
-    "Methodological Observations": "🧠",
-
-    "Strategic Insights": "✨",
-
-    "Research Limitations": "⚠",
-
-    "Research Gaps": "🕳",
-
-    "Future Research Directions": "🌐",
-
-    "Methodological Weaknesses": "📉",
-
-    "Deployment Challenges": "🛠",
-
-    "Strategic Opportunities": "🎯",
-
-    "Cluster Relationships": "🔗",
-
-    "Contrasting Research Directions": "⚡",
-
-    "Cross-Domain Insights": "🌍",
-
-    "Strategic Observations": "🧠",
-
-    "Unified Research Understanding": "⊕"
-  }
+  "Cluster Relationships": "⟡",
+  "Contrasting Research Directions": "⋈",
+  "Cross-Domain Insights": "◎",
+  "Strategic Observations": "◍",
+  "Unified Research Understanding": "⊕"
+}
 
   return map[title] || "◈"
 }
@@ -409,7 +606,12 @@ function highlightKeywords(text) {
     "multitask",
     "optimization",
     "reasoning",
-    "alignment"
+    "alignment",
+    "warfare",
+    "autonomous",
+    "military",
+    "safety",
+    "human oversight"
   ]
 
   let output = text
@@ -423,7 +625,7 @@ function highlightKeywords(text) {
 
     output = output.replace(
       regex,
-      `<span class="text-blue-400 font-semibold">$1</span>`
+      `<span class="text-cyan-300 font-semibold">$1</span>`
     )
   })
 

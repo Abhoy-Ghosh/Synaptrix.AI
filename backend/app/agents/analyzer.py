@@ -10,7 +10,7 @@ def analyze(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:200]}"
         for p in papers
-    ])[:3500]
+    ])[:2500]
 
     prompt = f"""
 You are an elite AI Research Intelligence Analyst.

@@ -11,7 +11,7 @@ def generate_full_report(topic, papers):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:300]}"
         for p in papers
-    ])[:3500]
+    ])[:2500]
 
     prompt = f"""
 You are an elite AI Research Synthesis Engine.

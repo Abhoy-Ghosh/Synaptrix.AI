@@ -232,7 +232,7 @@ def summarize_papers(papers, topic):
     content = "\n\n".join([
         f"{p['title']}: {p['abstract'][:300]}"
         for p in papers
-    ])[:3500]
+    ])[:2500]
 
     prompt = f"""
 Research Topic:
