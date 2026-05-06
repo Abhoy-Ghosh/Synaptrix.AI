@@ -8,6 +8,7 @@ from app.ai_engine.pipeline import run_pipeline, warmup_model
 from app.feedback.feedback_store import add_feedback
 from app.feedback.paper_feedback import add_paper_feedback
 
+from fastapi.middleware.cors import CORSMiddleware
 
 # -----------------------------
 # STARTUP
@@ -20,6 +21,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # frontend URL later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # -----------------------------
 # REQUEST MODELS
