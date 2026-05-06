@@ -30,6 +30,10 @@ const Home = () => {
   const [currentStep, setCurrentStep]   = useState(-1)
   const [globalFeedback, setGlobalFeedback] = useState("")
 
+  const [generationTime, setGenerationTime] = useState(null)
+
+const [credits, setCredits] = useState(300)
+
   /* navbar scroll state */
   const [scrolled, setScrolled]         = useState(false)
   const [charCount, setCharCount]       = useState(0)
@@ -42,41 +46,112 @@ const Home = () => {
   }, [])
 
   /* ─── GENERATE ─── */
-  const handleGenerate = async () => {
-    if (!topic.trim()) return
-    try {
-      setLoading(true)
-      setResult(null)
-      setGlobalFeedback("")
-      const timings = [
-  1400,
-  2200,
-  1800,
-  2400,
-  2000,
-  1500
-]
+ /* ─── GENERATE ─── */
 
-for (let i = 0; i < 6; i++) {
+const handleGenerate = async () => {
 
-  setCurrentStep(i)
+  if (!topic.trim()) return
 
-  await new Promise((r) =>
-    setTimeout(r, timings[i])
-  )
-}
-      const data = await generateResearch(topic, mode)
-      console.log(data)
-      setResult(data)
-      setCurrentStep(-1)
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120)
-    } catch (err) {
-      console.log(err)
-    } finally {
-      setLoading(false)
-    }
+  if (credits <= 0) {
+
+    alert("No credits remaining")
+
+    return
   }
 
+  try {
+
+    setLoading(true)
+
+    setResult(null)
+
+    setGlobalFeedback("")
+
+    const startTime =
+      performance.now()
+
+    /* pipeline status */
+
+/* pipeline animation */
+
+let step = 0
+
+setCurrentStep(step)
+
+const interval = setInterval(() => {
+
+  step++
+
+  if (step <= 5) {
+    setCurrentStep(step)
+  }
+
+}, 1400)
+
+/* backend call */
+
+const data =
+  await generateResearch(
+    topic,
+    mode
+  )
+
+/* stop animation */
+
+clearInterval(interval)
+
+setCurrentStep(5)
+
+    setResult(data)
+
+    /* timing */
+
+    const endTime =
+      performance.now()
+
+    const totalSeconds =
+      (
+        (endTime - startTime) / 1000
+      ).toFixed(1)
+
+    setGenerationTime(totalSeconds)
+
+    /* credits */
+
+    if (mode === "fast") {
+      setCredits(prev => prev - 1)
+    }
+
+    if (mode === "parallel") {
+      setCredits(prev => prev - 3)
+    }
+
+    if (mode === "research") {
+      setCredits(prev => prev - 6)
+    }
+
+    /* scroll */
+
+    setTimeout(() => {
+
+      resultsRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      })
+
+    }, 120)
+
+  } catch (err) {
+
+    console.log(err)
+
+  } finally {
+
+    setLoading(false)
+
+    setCurrentStep(-1)
+  }
+}
   /* ─── GLOBAL FEEDBACK ─── */
   const handleGlobalFeedback = async (type) => {
     try {
@@ -112,7 +187,7 @@ for (let i = 0; i < 6; i++) {
       {/* ─── STICKY NAVBAR ─── */}
       <nav className={`sticky top-0 z-50 navbar-glass ${scrolled ? "scrolled" : ""}`}
            style={{ height: 'var(--nav-height)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
 
           {/* LEFT — logo + brand */}
           <div className="flex items-center gap-4">
@@ -137,6 +212,58 @@ for (let i = 0; i < 6; i++) {
 
           {/* RIGHT — nav actions */}
           <div className="flex items-center gap-3">
+
+            {/* credits */}
+
+<div
+  className="
+    hidden
+    md:flex
+
+    items-center
+    gap-2
+
+    px-4
+    py-2
+
+    rounded-full
+  "
+  style={{
+    background:
+      'rgba(59,130,246,0.08)',
+
+    border:
+      '1px solid rgba(59,130,246,0.12)',
+  }}
+>
+
+  <div
+    className="
+      w-1.5
+      h-1.5
+      rounded-full
+      bg-cyan-400
+    "
+  />
+
+  <span
+    className="
+      text-xs
+      text-zinc-300
+    "
+    style={{
+      fontFamily:
+        'var(--font-display)',
+
+      letterSpacing:
+        '0.06em'
+    }}
+  >
+    {credits} Credits
+  </span>
+
+</div>
+
             {/* mode indicator pill */}
             <div className="hidden sm:flex items-center gap-2 counter-badge px-4 py-2 rounded-full">
               <span className="text-zinc-400">
@@ -174,7 +301,7 @@ for (let i = 0; i < 6; i++) {
   className="
     w-full
 
-    max-w-[1200px]
+    max-w-[1400px]
 
     mx-auto
 
@@ -216,7 +343,7 @@ for (let i = 0; i < 6; i++) {
           </div>
 
           {/* sub-headline */}
-          <p className="anim-fade-up delay-3 text-zinc-400 text-lg leading-8 max-w-3xl mb-12"
+          <p className="anim-fade-up delay-3 text-zinc-400 text-lg leading-8 max-w-xl mb-12"
              style={{ fontFamily: 'var(--font-body)', fontWeight: 300 }}>
             Adaptive multi-agent synthesis, semantic retrieval,
             cross-paper reasoning, intelligent clustering,
@@ -305,9 +432,29 @@ for (let i = 0; i < 6; i++) {
                   onChange={(e) => setMode(e.target.value)}
                   className="mode-select px-5 py-3.5 rounded-2xl text-sm"
                 >
-                  <option value="fast">⚡ Fast Mode</option>
-                  <option value="parallel">🔄 Parallel Mode</option>
-                  <option value="research">🧠 Research Mode</option>
+<option value="fast"  
+style={{
+    background: '#0f172a',
+    color: 'white'
+  }}>
+  ⚡ Fast Mode • 1 Credit
+</option>
+
+<option value="parallel"
+ style={{
+    background: '#0f172a',
+    color: 'white'
+  }}>
+  🔄 Parallel Mode • 3 Credits
+</option>
+
+<option value="research"
+ style={{
+    background: '#0f172a',
+    color: 'white'
+  }}>
+  🧠 Research Mode • 6 Credits
+</option>
                 </select>
               </div>
 
