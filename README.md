@@ -1,4 +1,4 @@
-````md
+
 # 🧠 Synaptrix AI
 ### Adaptive Self-Improving Multi-Agent Research Intelligence Engine
 
@@ -80,7 +80,6 @@ LLM Layer (Gemini + Groq Fallback)
 Cross-Paper Synthesis
     ↓
 Structured Research Output
-````
 
 ---
 
@@ -795,7 +794,4 @@ Retrieval
 This project started as a paper summarizer.
 
 It evolved into an adaptive research intelligence system.
-```
-
-```
 ```
