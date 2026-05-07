@@ -17,7 +17,6 @@ from app.routes.pdf import router as pdf_router
 # -----------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    asyncio.create_task(asyncio.to_thread(warmup_model))
     yield
 
 
