@@ -212,7 +212,48 @@ setCurrentStep(5)
 
           {/* RIGHT — nav actions */}
           <div className="flex items-center gap-3">
+        <a
+  href="/guide"
+  className="
+    px-4
+    py-2
+    rounded-full
 
+    text-sm
+    text-zinc-400
+
+    transition-all
+    duration-300
+  "
+  style={{
+    border:
+      '1px solid rgba(255,255,255,0.06)',
+
+    background:
+      'rgba(255,255,255,0.02)',
+
+    backdropFilter:
+      'blur(20px)'
+  }}
+
+  onMouseEnter={(e) => {
+    e.currentTarget.style.borderColor =
+      'rgba(59,130,246,0.25)'
+
+    e.currentTarget.style.color =
+      '#ffffff'
+  }}
+
+  onMouseLeave={(e) => {
+    e.currentTarget.style.borderColor =
+      'rgba(255,255,255,0.06)'
+
+    e.currentTarget.style.color =
+      '#a1a1aa'
+  }}
+>
+  Guide
+</a>
 
 
             {/* mode indicator pill */}
