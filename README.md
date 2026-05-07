@@ -1,6 +1,6 @@
-
 # 🧠 Synaptrix AI
-### Adaptive Self-Improving Multi-Agent Research Intelligence Engine
+
+### Adaptive Cross-Paper Research Intelligence
 
 <p align="center">
 
@@ -18,7 +18,7 @@
 
 Synaptrix AI is an adaptive multi-agent research intelligence system designed to go beyond traditional AI summarization tools.
 
-Instead of acting like a simple paper retrieval engine, the system combines:
+Instead of acting like a simple paper retrieval engine, the platform combines:
 
 - semantic retrieval
 - vector memory
@@ -35,7 +35,45 @@ to generate structured research intelligence.
 
 # 🔥 One-Line Pitch
 
-> “An adaptive multi-agent research intelligence system that learns which papers matter over time.”
+> “An adaptive research intelligence engine that learns which research papers matter over time.”
+
+---
+
+# 📚 Table of Contents
+
+- [🚀 Overview](#-overview)
+- [🔥 One-Line Pitch](#-one-line-pitch)
+- [🎯 Core Vision](#-core-vision)
+- [🧠 Why Synaptrix AI Is Different](#-why-synaptrix-ai-is-different)
+- [🖼️ Platform Preview](#️-platform-preview)
+- [🎥 Product Walkthrough](#-product-walkthrough)
+- [🏗️ System Architecture](#️-system-architecture)
+- [🧠 Core Intelligence Layers](#-core-intelligence-layers)
+- [⚡ Key Features](#-key-features)
+- [⚖️ Hybrid Ranking Engine](#️-hybrid-ranking-engine)
+- [🧠 Adaptive Learning System](#-adaptive-learning-system)
+- [🧠 Cluster-Based Synthesis Intelligence](#-cluster-based-synthesis-intelligence)
+- [🤖 Multi-Agent Architecture](#-multi-agent-architecture)
+- [⚡ Adaptive Execution Modes](#-adaptive-execution-modes)
+- [🔄 Pipeline Flow](#-pipeline-flow)
+- [🧠 System Evolution Journey](#-system-evolution-journey)
+- [🔥 Graphify Visualization](#-graphify-visualization)
+- [🌐 Live Demo Links](#-live-demo-links)
+- [🧱 Tech Stack](#-tech-stack)
+- [📂 Project Structure](#-project-structure)
+- [⚙️ Environment Setup](#️-environment-setup)
+- [⚡ Running Locally](#-running-locally)
+- [🐳 Docker Support](#-docker-support)
+- [🔬 Example Research Flow](#-example-research-flow)
+- [📦 PDF Research Reports](#-pdf-research-reports)
+- [📈 Performance Notes](#-performance-notes)
+- [🚨 Major Engineering Challenges Solved](#-major-engineering-challenges-solved)
+- [🧠 Design Philosophy](#-design-philosophy)
+- [🚀 Future Roadmap](#-future-roadmap)
+- [🎨 UI Philosophy](#-ui-philosophy)
+- [📊 Current Status](#-current-status)
+- [👨‍💻 Author](#-author)
+- [📜 License](#-license)
 
 ---
 
@@ -54,24 +92,73 @@ Build an AI system that can:
 
 ---
 
----
-# Why Synaptrix AI Is Different
+# 🧠 Why Synaptrix AI Is Different
 
 Most AI research tools:
+
 - summarize papers individually
 - rely on static ranking
 - lack adaptive learning
 - ignore paper relationships
+- have no semantic memory
+- cannot evolve retrieval quality
 
 Synaptrix AI:
+
 - learns from feedback
 - clusters related research
 - performs cross-paper synthesis
 - adapts retrieval quality over time
 - visualizes architecture intelligence
+- combines retrieval + memory + reasoning
+
+---
+
+# 🖼️ Platform Preview
+
+## 🏠 Homepage
+
+![Homepage](./assets/screenshots/homepage.png)
+
+---
+
+## 🧠 Research Dashboard
+
+![Dashboard](./assets/screenshots/dashboard.png)
+
+---
+
+## 🔥 Graphify Visualization
+
+![Graphify](./assets/screenshots/graphify.png)
+
+---
+
+## 📊 Cluster-Based Synthesis
+
+![Cluster Synthesis](./assets/screenshots/cluster_synthesis.png)
+
+---
+
+## 📄 PDF Research Report
+
+![PDF Report](./assets/screenshots/pdf_report.png)
+
+---
+
+# 🎥 Product Walkthrough
+
+![Demo](./assets/demo/demo.gif)
+
 ---
 
 # 🏗️ System Architecture
+
+## 🧠 Visual Architecture
+
+![Architecture](./assets/architecture/system_architecture.png)
+
+---
 
 ```text
 User Query
@@ -98,20 +185,21 @@ Cross-Paper Synthesis
     ↓
 Structured Research Output
 ```
+
 ---
 
 # 🧠 Core Intelligence Layers
 
-| Layer             | Purpose                  |
-| ----------------- | ------------------------ |
-| Cache Layer       | Speed optimization       |
-| FAISS Memory      | Semantic memory          |
-| Hybrid Ranking    | Intelligent relevance    |
-| Feedback System   | Adaptive learning        |
-| Similarity Engine | Paper relationships      |
-| Cluster Reasoning | Grouped synthesis        |
-| Multi-Agent Layer | Specialized reasoning    |
-| Synthesis Layer   | Cross-paper intelligence |
+| Layer | Purpose |
+|---|---|
+| Cache Layer | Speed optimization |
+| FAISS Memory | Semantic memory |
+| Hybrid Ranking | Intelligent relevance |
+| Feedback System | Adaptive learning |
+| Similarity Engine | Paper relationships |
+| Cluster Reasoning | Grouped synthesis |
+| Multi-Agent Layer | Specialized reasoning |
+| Synthesis Layer | Cross-paper intelligence |
 
 ---
 
@@ -119,11 +207,11 @@ Structured Research Output
 
 ## 🔍 Semantic Research Retrieval
 
-* arXiv integration
-* Semantic Scholar support
-* embedding-based retrieval
-* semantic vector search
-* contextual relevance detection
+- arXiv integration
+- Semantic Scholar support
+- embedding-based retrieval
+- semantic vector search
+- contextual relevance detection
 
 ---
 
@@ -133,10 +221,36 @@ The system uses FAISS as a semantic memory layer.
 
 Features:
 
-* stores embeddings
-* reusable retrieval
-* semantic similarity search
-* memory-first retrieval architecture
+- stores embeddings
+- reusable retrieval
+- semantic similarity search
+- memory-first retrieval architecture
+
+---
+
+## ⚡ Adaptive Retrieval Pipeline
+
+The retrieval pipeline combines:
+
+- semantic similarity
+- keyword relevance
+- adaptive feedback
+- contextual ranking
+- relationship scoring
+
+to improve research relevance over time.
+
+---
+
+## 📊 Cross-Paper Synthesis
+
+Instead of summarizing papers independently, Synaptrix AI:
+
+- groups related research
+- compares methodologies
+- detects agreement/disagreement
+- identifies trends
+- performs relationship-aware synthesis
 
 ---
 
@@ -159,21 +273,21 @@ Final Score =
 
 Additional boosts:
 
-* title relevance boost
-* phrase match boost
-* contextual weighting
+- title relevance boost
+- phrase match boost
+- contextual weighting
 
 ---
 
 ## 📊 Ranking Components
 
-| Signal              | Purpose                     |
-| ------------------- | --------------------------- |
-| Semantic Similarity | Conceptual relevance        |
-| Keyword Match       | Direct query alignment      |
-| Feedback Score      | Adaptive learning           |
-| Title Boost         | Strong topical matching     |
-| Phrase Boost        | Contextual phrase detection |
+| Signal | Purpose |
+|---|---|
+| Semantic Similarity | Conceptual relevance |
+| Keyword Match | Direct query alignment |
+| Feedback Score | Adaptive learning |
+| Title Boost | Strong topical matching |
+| Phrase Boost | Contextual phrase detection |
 
 ---
 
@@ -181,10 +295,10 @@ Additional boosts:
 
 Pure semantic search often fails because:
 
-* highly similar papers may still be irrelevant
-* keyword-important papers can be missed
-* user preferences are ignored
-* citation importance is lost
+- highly similar papers may still be irrelevant
+- keyword-important papers can be missed
+- user preferences are ignored
+- citation importance is lost
 
 Synaptrix AI solves this using weighted ranking intelligence.
 
@@ -196,10 +310,10 @@ Synaptrix AI continuously improves retrieval and ranking quality using a multi-l
 
 The system learns from:
 
-* topic-level feedback
-* paper-level feedback
-* retrieval relevance
-* semantic similarity patterns
+- topic-level feedback
+- paper-level feedback
+- retrieval relevance
+- semantic similarity patterns
 
 ---
 
@@ -227,9 +341,9 @@ Tracks whether an entire research response was useful.
 
 Impacts:
 
-* retrieval quality
-* synthesis quality
-* future ranking decisions
+- retrieval quality
+- synthesis quality
+- future ranking decisions
 
 ---
 
@@ -244,26 +358,9 @@ paper_score -= 1   # not useful
 
 This affects:
 
-* future recommendations
-* ranking priority
-* retrieval weighting
-
----
-
-## 🧠 Why This Matters
-
-Most AI research tools are static.
-
-Synaptrix AI is designed to evolve through interaction.
-
-The system gradually improves:
-
-* relevance
-* retrieval precision
-* synthesis quality
-* recommendation accuracy
-
-based on real usage patterns.
+- future recommendations
+- ranking priority
+- retrieval weighting
 
 ---
 
@@ -275,11 +372,11 @@ Using semantic similarity scoring and embedding relationships, the system identi
 
 This allows the system to:
 
-* detect related research themes
-* compare methodologies
-* identify agreement/disagreement patterns
-* reduce redundant synthesis
-* build structured research understanding
+- detect related research themes
+- compare methodologies
+- identify agreement/disagreement patterns
+- reduce redundant synthesis
+- build structured research understanding
 
 ---
 
@@ -309,10 +406,10 @@ score = cosine_similarity(
 
 This enables:
 
-* paper clustering
-* relationship mapping
-* trend grouping
-* semantic reasoning
+- paper clustering
+- relationship mapping
+- trend grouping
+- semantic reasoning
 
 ---
 
@@ -332,11 +429,11 @@ System understands research structure
 
 This transforms the platform from:
 
-* flat summarization
+- flat summarization
 
 into:
 
-* structured research intelligence.
+- structured research intelligence.
 
 ---
 
@@ -344,23 +441,23 @@ into:
 
 The system uses multiple specialized agents.
 
-| Agent            | Responsibility                 |
-| ---------------- | ------------------------------ |
-| Retriever Agent  | Fetches relevant papers        |
-| Summarizer Agent | Creates concise summaries      |
-| Analyzer Agent   | Extracts patterns and insights |
-| Similarity Agent | Detects relationships          |
-| Gap Finder Agent | Identifies research gaps       |
+| Agent | Responsibility |
+|---|---|
+| Retriever Agent | Fetches relevant papers |
+| Summarizer Agent | Creates concise summaries |
+| Analyzer Agent | Extracts patterns and insights |
+| Similarity Agent | Detects relationships |
+| Gap Finder Agent | Identifies research gaps |
 
 ---
 
 # ⚡ Adaptive Execution Modes
 
-| Mode     | Calls                     | Quality | Speed | Cost  |
-| -------- | ------------------------- | ------- | ----- | ----- |
-| Fast     | Combined                  | ⭐⭐      | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| Parallel | Async Agents              | ⭐⭐⭐⭐    | ⭐⭐⭐⭐  | ⭐⭐⭐   |
-| Research | Sequential Deep Reasoning | ⭐⭐⭐⭐⭐   | ⭐⭐    | ⭐     |
+| Mode | Calls | Quality | Speed | Cost |
+|---|---|---|---|---|
+| Fast | Combined | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| Parallel | Async Agents | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ |
+| Research | Sequential Deep Reasoning | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐ |
 
 ---
 
@@ -393,9 +490,9 @@ Query → arXiv → LLM → Output
 
 Problems:
 
-* no memory
-* repeated API calls
-* unstable outputs
+- no memory
+- repeated API calls
+- unstable outputs
 
 ---
 
@@ -403,8 +500,8 @@ Problems:
 
 Added:
 
-* embeddings
-* cosine similarity ranking
+- embeddings
+- cosine similarity ranking
 
 ---
 
@@ -412,8 +509,8 @@ Added:
 
 Added:
 
-* JSON caching
-* feedback-aware invalidation
+- JSON caching
+- feedback-aware invalidation
 
 ---
 
@@ -421,9 +518,9 @@ Added:
 
 Added:
 
-* semantic memory
-* vector search
-* reusable retrieval
+- semantic memory
+- vector search
+- reusable retrieval
 
 ---
 
@@ -431,9 +528,9 @@ Added:
 
 Combined:
 
-* semantic similarity
-* keyword relevance
-* feedback signals
+- semantic similarity
+- keyword relevance
+- feedback signals
 
 ---
 
@@ -441,10 +538,10 @@ Combined:
 
 Introduced:
 
-* summarizer
-* analyzer
-* similarity reasoning
-* gap finder
+- summarizer
+- analyzer
+- similarity reasoning
+- gap finder
 
 ---
 
@@ -464,7 +561,7 @@ Parallel reasoning ✅
 
 Expected:
 
-* 2–3x speed improvement
+- 2–3x speed improvement
 
 ---
 
@@ -472,10 +569,10 @@ Expected:
 
 Added:
 
-* Gemini fallback
-* Groq fallback
-* safe wrappers
-* graceful failure handling
+- Gemini fallback
+- Groq fallback
+- safe wrappers
+- graceful failure handling
 
 ---
 
@@ -499,10 +596,10 @@ Cross-paper reasoning ✅
 
 Added:
 
-* semantic grouping
-* similarity scoring
-* relationship-aware synthesis
-* grouped reasoning
+- semantic grouping
+- similarity scoring
+- relationship-aware synthesis
+- grouped reasoning
 
 ---
 
@@ -510,10 +607,10 @@ Added:
 
 Added:
 
-* architecture visualization
-* interactive node graphs
-* pipeline mapping
-* layered neural system view
+- architecture visualization
+- interactive node graphs
+- pipeline mapping
+- layered neural system view
 
 ---
 
@@ -523,31 +620,44 @@ Graphify transforms the backend architecture into an interactive graph-based neu
 
 Built using:
 
-* vis-network
-* dynamic node systems
-* layered architecture mapping
+- vis-network
+- dynamic node systems
+- layered architecture mapping
 
 ---
 
 ## Graph Layers
 
-* Core
-* Agents
-* Services
-* Storage
-* Feedback
+- Core
+- Agents
+- Services
+- Storage
+- Feedback
 
 ---
 
 ## Features
 
-* interactive architecture graph
-* draggable nodes
-* cinematic neural motion
-* zoom control
-* collapsible panels
-* responsive layout
-* architecture inspection
+- interactive architecture graph
+- draggable nodes
+- cinematic neural motion
+- zoom control
+- collapsible panels
+- responsive layout
+- architecture inspection
+
+---
+
+# 🌐 Live Demo Links
+
+| Resource | Link |
+|---|---|
+| 🚀 Live Frontend | [Open App](https://your-vercel-link.vercel.app) |
+| ⚙️ Backend API | [Backend](https://your-render-backend.onrender.com/docs) |
+| 🎥 Demo Video | [Watch Demo](https://drive.google.com/file/d/DEMO_ID/view) |
+| 📂 GitHub Repository | [GitHub Repo](https://github.com/Abhoy-Ghosh/Synaptrix.AI) |
+| 📄 Project PDF | [Open PDF](https://drive.google.com/file/d/PDF_ID/view) |
+| 📊 Pitch Deck | [Pitch Deck](https://drive.google.com/file/d/PITCH_ID/view) |
 
 ---
 
@@ -555,32 +665,38 @@ Built using:
 
 ## Frontend
 
-* React
-* Vite
-* Axios
-* GSAP
-* CSS
-* Vis Network
+- React
+- Vite
+- Axios
+- GSAP
+- CSS
+- Vis Network
+
+---
 
 ## Backend
 
-* FastAPI
-* Python
-* Uvicorn
+- FastAPI
+- Python
+- Uvicorn
+
+---
 
 ## AI / ML
 
-* SentenceTransformers
-* all-mpnet-base-v2
-* FAISS
-* Gemini API
-* Groq API
+- SentenceTransformers
+- all-mpnet-base-v2
+- FAISS
+- Gemini API
+- Groq API
+
+---
 
 ## Infrastructure
 
-* Docker
-* Render
-* Vercel
+- Docker
+- Render
+- Vercel
 
 ---
 
@@ -607,39 +723,59 @@ backend/
 │
 ├── requirements.txt
 └── codegraph.html
+
+assets/
+│
+├── screenshots/
+│   ├── homepage.png
+│   ├── dashboard.png
+│   ├── graphify.png
+│   ├── cluster_synthesis.png
+│   └── pdf_report.png
+│
+├── architecture/
+│   └── system_architecture.png
+│
+└── demo/
+    └── demo.gif
 ```
 
 ---
 
-# 📦 PDF Research Reports
+# ⚙️ Environment Setup
 
-The platform can generate branded downloadable PDF research reports containing:
+## Backend `.env`
 
-* summaries
-* analysis
-* similarities
-* gaps
-* synthesis
-* generated insights
+Create:
 
----
-
-# 🌐 Deployment
-
-## Frontend
-
-* Vercel
-
-## Backend
-
-* Render
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key
+```
 
 ---
 
-# 🐳 Docker Support
+## Frontend `.env`
+
+```env
+VITE_API_URL=https://your-render-backend.onrender.com
+```
+
+---
+
+## Install Dependencies
+
+### Backend
 
 ```bash
-docker-compose up --build
+pip install -r requirements.txt
+```
+
+### Frontend
+
+```bash
+npm install
 ```
 
 ---
@@ -674,17 +810,75 @@ npm run dev
 
 ---
 
+# 🐳 Docker Support
+
+```bash
+docker-compose up --build
+```
+
+---
+
+# 🔬 Example Research Flow
+
+## Example Query
+
+```text
+LLM reasoning optimization
+```
+
+---
+
+## System Output
+
+The system performs:
+
+- semantic retrieval
+- hybrid ranking
+- similarity scoring
+- cluster grouping
+- multi-agent reasoning
+- cross-paper synthesis
+- insight generation
+
+---
+
+## Generated Intelligence
+
+Synaptrix AI produces:
+
+- ranked research papers
+- grouped research themes
+- methodology comparisons
+- relationship mapping
+- research gaps
+- synthesized conclusions
+
+---
+
+# 📦 PDF Research Reports
+
+The platform can generate branded downloadable PDF research reports containing:
+
+- summaries
+- analysis
+- similarities
+- gaps
+- synthesis
+- generated insights
+
+---
+
 # 📈 Performance Notes
 
 Current architecture supports:
 
-* semantic retrieval
-* modular orchestration
-* adaptive reasoning
-* fault-tolerant inference
-* feedback learning
-* vector memory retrieval
-* relationship-aware synthesis
+- semantic retrieval
+- modular orchestration
+- adaptive reasoning
+- fault-tolerant inference
+- feedback learning
+- vector memory retrieval
+- relationship-aware synthesis
 
 Estimated demo capacity:
 
@@ -696,14 +890,16 @@ Estimated demo capacity:
 
 # 🚨 Major Engineering Challenges Solved
 
-* semantic drift in FAISS
-* cache overriding feedback
-* model dimension mismatch
-* cold start deployment issues
-* LLM quota failures
-* redundant API calls
-* sequential bottlenecks
-* cross-domain contamination
+- semantic drift in FAISS
+- cache overriding feedback
+- model dimension mismatch
+- cold start deployment issues
+- LLM quota failures
+- redundant API calls
+- sequential bottlenecks
+- cross-domain contamination
+- frontend/backend port mismatches
+- deployment dependency corruption
 
 ---
 
@@ -723,29 +919,35 @@ Structure > Flat Reasoning
 
 ## Intelligence Layer
 
-* contradiction detection
-* autonomous clustering
-* timeline reasoning
-* trend detection
-* research evolution graphs
+- contradiction detection
+- autonomous clustering
+- timeline reasoning
+- trend detection
+- research evolution graphs
+
+---
 
 ## Retrieval Layer
 
-* PubMed integration
-* CrossRef integration
-* query decomposition
+- PubMed integration
+- CrossRef integration
+- query decomposition
+
+---
 
 ## System Layer
 
-* Redis cache
-* persistent FAISS
-* background ingestion workers
+- Redis cache
+- persistent FAISS
+- background ingestion workers
+
+---
 
 ## UX Layer
 
-* advanced dashboards
-* personalized workspaces
-* graph expansion systems
+- advanced dashboards
+- personalized workspaces
+- graph expansion systems
 
 ---
 
@@ -759,30 +961,30 @@ Neural architecture aesthetics
 
 Inspired by:
 
-* sci-fi dashboards
-* AI infrastructure panels
-* adaptive intelligence systems
+- sci-fi dashboards
+- AI infrastructure panels
+- adaptive intelligence systems
 
 Features:
 
-* floating graph systems
-* cinematic transitions
-* neural-style layouts
-* responsive architecture
+- floating graph systems
+- cinematic transitions
+- neural-style layouts
+- responsive architecture
 
 ---
 
 # 📊 Current Status
 
-| Category                 | Status    |
-| ------------------------ | --------- |
-| Retrieval                | ✅ Stable  |
-| Ranking                  | ✅ Strong  |
-| Adaptive Learning        | ✅ Active  |
-| Cluster Synthesis        | ✅ Working |
-| Multi-Agent System       | ✅ Working |
-| Graphify                 | ✅ Working |
-| Deployment               | ⚡ Active  |
+| Category | Status |
+|---|---|
+| Retrieval | ✅ Stable |
+| Ranking | ✅ Strong |
+| Adaptive Learning | ✅ Active |
+| Cluster Synthesis | ✅ Working |
+| Multi-Agent System | ✅ Working |
+| Graphify | ✅ Working |
+| Deployment | ⚡ Active |
 | Cross-Paper Intelligence | 🔥 Active |
 
 ---
@@ -805,6 +1007,20 @@ Retrieval
 
 ---
 
+# 🤝 Contributions
+
+Contributions, suggestions, and improvements are welcome.
+
+Feel free to fork the repository and submit pull requests.
+
+---
+
+# 📜 License
+
+MIT License
+
+---
+
 # 🧠 Final Insight
 
 ```text
@@ -812,3 +1028,4 @@ This project started as a paper summarizer.
 
 It evolved into an adaptive research intelligence system.
 ```
+
