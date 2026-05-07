@@ -80,7 +80,7 @@ LLM Layer (Gemini + Groq Fallback)
 Cross-Paper Synthesis
     ↓
 Structured Research Output
-
+```
 ---
 
 # 🧠 Core Intelligence Layers
