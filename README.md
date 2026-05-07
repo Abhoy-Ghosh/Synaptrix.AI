@@ -54,6 +54,23 @@ Build an AI system that can:
 
 ---
 
+---
+# Why Synaptrix AI Is Different
+
+Most AI research tools:
+- summarize papers individually
+- rely on static ranking
+- lack adaptive learning
+- ignore paper relationships
+
+Synaptrix AI:
+- learns from feedback
+- clusters related research
+- performs cross-paper synthesis
+- adapts retrieval quality over time
+- visualizes architecture intelligence
+---
+
 # 🏗️ System Architecture
 
 ```text
