@@ -7,7 +7,7 @@ import axios from "axios"
 const API = axios.create({
 
   baseURL:
-    "https://synaptrix-backend.onrender.com"
+"http://127.0.0.1:8001"
 })
 
 /* =========================================
@@ -86,8 +86,7 @@ export async function downloadResearchPDF(data) {
 
     const response = await fetch(
 
-      "https://synaptrix-backend.onrender.com/generate-pdf",
-
+"http://127.0.0.1:8001",
       {
 
         method: "POST",
