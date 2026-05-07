@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Quantum Computing Basics",
+    "abstract": "Quantum computing uses qubits, superposition, and entanglement to perform computations more efficiently than classical computers in certain domains."
+  },
+  {
+    "title": "Applications of Quantum Cryptography",
+    "abstract": "Quantum cryptography leverages quantum mechanics principles to ensure secure communication, including quantum key distribution."
+  },
+  {
+    "title": "Challenges in Quantum Hardware",
+    "abstract": "Building stable quantum hardware is difficult due to noise, decoherence, and error correction limitations."
+  }
+]

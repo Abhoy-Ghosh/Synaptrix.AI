@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+
+    <title>AI Research Architecture Graph</title>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css"/>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+
+    <style>
+
+        body{
+            margin:0;
+            overflow:hidden;
+            background:#0d0d1a;
+            font-family:monospace;
+        }
+
+        #mynetwork{
+            width:100%;
+            height:100vh;
+            background:#0d0d1a;
+        }
+
+        /* =========================================
+           LEGEND
+        ========================================= */
+
+        #legend{
+            position:fixed;
+            top:18px;
+            right:18px;
+
+            background:rgba(13,13,26,0.95);
+            border:1px solid #2a2a4a;
+
+            border-radius:14px;
+
+            padding:18px;
+
+            color:#d7dcff;
+
+            z-index:9999;
+
+            box-shadow:0 4px 28px rgba(0,0,0,0.6);
+
+            backdrop-filter:blur(8px);
+
+            min-width:180px;
+        }
+
+        #legend b{
+            color:white;
+            font-size:15px;
+        }
+
+        .row{
+            margin-top:8px;
+        }
+
+        .dot{
+            font-size:18px;
+            margin-right:8px;
+        }
+
+        /* =========================================
+           INFO PANEL
+        ========================================= */
+
+        #infoPanel{
+            position:fixed;
+            left:18px;
+            top:18px;
+
+            width:330px;
+
+            min-height:180px;
+            max-height:80vh;
+
+            overflow-y:auto;
+
+            background:rgba(13,13,26,0.96);
+
+            border:1px solid #2a2a4a;
+
+            border-radius:14px;
+
+            padding:18px;
+
+            color:#dfe6ff;
+
+            z-index:9999;
+
+            box-shadow:0 6px 28px rgba(0,0,0,0.6);
+
+            backdrop-filter:blur(8px);
+        }
+
+        #infoTitle{
+            font-size:17px;
+            color:white;
+            margin-bottom:14px;
+            font-weight:bold;
+        }
+
+        #infoContent{
+            color:#b6c2ef;
+            line-height:1.6;
+            font-size:13px;
+        }
+
+        .info-section{
+            margin-bottom:16px;
+        }
+
+        .info-label{
+            color:#6fa8ff;
+            font-weight:bold;
+            margin-bottom:5px;
+        }
+
+        ul{
+            padding-left:18px;
+        }
+
+        li{
+            margin-bottom:5px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<!-- =========================================
+     INFO PANEL
+========================================= -->
+
+<div id="infoPanel">
+
+    <div id="infoTitle">
+        Node Information
+    </div>
+
+    <div id="infoContent">
+        Click any node to inspect architecture details.
+    </div>
+
+</div>
+
+<!-- =========================================
+     LEGEND
+========================================= -->
+
+<div id="legend">
+
+    <b>⬡ LAYERS</b>
+
+    <div class="row">
+        <span class="dot" style="color:#ff4d4d">●</span>
+        Core
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#4da6ff">●</span>
+        Agents
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#66cc66">●</span>
+        Services
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#ffcc00">●</span>
+        Storage
+    </div>
+
+    <div class="row">
+        <span class="dot" style="color:#ff66cc">●</span>
+        Feedback
+    </div>
+
+    <hr style="border-color:#2a2a4a">
+
+    <div class="row" style="color:#8899ff">
+        ── Pipeline Flow
+    </div>
+
+    <div class="row" style="color:#556677">
+        ╌╌ File Mapping
+    </div>
+
+</div>
+
+<!-- =========================================
+     NETWORK
+========================================= -->
+
+<div id="mynetwork"></div>
+
+<script>
+
+    // =========================================
+    // NODES
+    // =========================================
+
+    const nodes = new vis.DataSet([
+
+        // CORE
+
+        {
+            id:"query",
+            label:"query",
+            shape:"circle",
+            size:42,
+            color:"#ff4d4d",
+            font:{color:"white"}
+        },
+
+        {
+            id:"insight_extractor",
+            label:"insight\nextractor",
+            shape:"circle",
+            size:42,
+            color:"#ff4d4d",
+            font:{color:"white"}
+        },
+
+        {
+            id:"output",
+            label:"output",
+            shape:"circle",
+            size:42,
+            color:"#ff4d4d",
+            font:{color:"white"}
+        },
+
+        // AGENTS
+
+        {
+            id:"retriever",
+            label:"retriever",
+            shape:"circle",
+            size:30,
+            color:"#4da6ff",
+            font:{color:"white"}
+        },
+
+        {
+            id:"summarizer",
+            label:"summarizer",
+            shape:"circle",
+            size:30,
+            color:"#4da6ff",
+            font:{color:"white"}
+        },
+
+        {
+            id:"analyzer",
+            label:"analyzer",
+            shape:"circle",
+            size:30,
+            color:"#4da6ff",
+            font:{color:"white"}
+        },
+
+        {
+            id:"gap_finder",
+            label:"gap\nfinder",
+            shape:"circle",
+            size:30,
+            color:"#4da6ff",
+            font:{color:"white"}
+        },
+
+        // SERVICES
+
+        {
+            id:"llm_service",
+            label:"llm\nservice",
+            shape:"circle",
+            size:36,
+            color:"#66cc66",
+            font:{color:"white"}
+        },
+
+        // STORAGE
+
+        {
+            id:"vector_store",
+            label:"vector\nstore",
+            shape:"circle",
+            size:24,
+            color:"#ffcc00",
+            font:{color:"white"}
+        },
+
+        {
+            id:"cache",
+            label:"cache",
+            shape:"circle",
+            size:24,
+            color:"#ffcc00",
+            font:{color:"white"}
+        },
+
+        // FEEDBACK
+
+        {
+            id:"feedback",
+            label:"feedback",
+            shape:"circle",
+            size:26,
+            color:"#ff66cc",
+            font:{color:"white"}
+        },
+
+        // =====================================
+        // FILE MAPPING NODES
+        // =====================================
+
+        {
+            id:"app.retriever",
+            label:"retriever.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.vector_store",
+            label:"vector_store.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.cache",
+            label:"cache.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.insight_extractor",
+            label:"insight_extractor.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.summarizer",
+            label:"summarizer.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.analyzer",
+            label:"analyzer.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.gap_finder",
+            label:"gap_finder.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        },
+
+        {
+            id:"app.llm_service",
+            label:"llm_service.py",
+            shape:"box",
+            color:"#1e2235",
+            font:{color:"white"}
+        }
+
+    ]);
+
+
+    // =========================================
+    // EDGES
+    // =========================================
+
+    const edges = new vis.DataSet([
+
+        // PIPELINE FLOW
+
+        {from:"query", to:"retriever"},
+        {from:"retriever", to:"vector_store"},
+        {from:"retriever", to:"cache"},
+        {from:"vector_store", to:"insight_extractor"},
+        {from:"cache", to:"insight_extractor"},
+
+        {from:"insight_extractor", to:"summarizer"},
+        {from:"insight_extractor", to:"analyzer"},
+        {from:"insight_extractor", to:"gap_finder"},
+
+        {from:"summarizer", to:"llm_service"},
+        {from:"analyzer", to:"llm_service"},
+        {from:"gap_finder", to:"llm_service"},
+
+        {from:"llm_service", to:"output"},
+        {from:"output", to:"feedback"},
+
+        // FILE MAPPING
+
+        {
+            from:"retriever",
+            to:"app.retriever",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"vector_store",
+            to:"app.vector_store",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"cache",
+            to:"app.cache",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"insight_extractor",
+            to:"app.insight_extractor",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"summarizer",
+            to:"app.summarizer",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"analyzer",
+            to:"app.analyzer",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"gap_finder",
+            to:"app.gap_finder",
+            dashes:true,
+            color:"#334466"
+        },
+
+        {
+            from:"llm_service",
+            to:"app.llm_service",
+            dashes:true,
+            color:"#334466"
+        }
+
+    ]);
+
+
+    // =========================================
+    // NETWORK OPTIONS
+    // =========================================
+
+    const options = {
+
+        physics:{
+            enabled:true,
+            solver:"forceAtlas2Based",
+
+            forceAtlas2Based:{
+                gravitationalConstant:-160,
+                centralGravity:0.03,
+                springLength:200,
+                springConstant:0.05,
+                damping:0.9,
+                avoidOverlap:1
+            },
+
+            stabilization:{
+                enabled:true,
+                iterations:500
+            }
+        },
+
+        edges:{
+            arrows:{
+                to:{
+                    enabled:true,
+                    scaleFactor:0.7
+                }
+            },
+
+            width:2,
+
+            smooth:{
+                type:"continuous"
+            },
+
+            color:{
+                color:"#5566bb",
+                highlight:"#ffffff",
+                hover:"#aaaaff"
+            }
+        },
+
+        nodes:{
+            borderWidth:2,
+            borderWidthSelected:4,
+
+            shadow:{
+                enabled:true,
+                size:10,
+                color:"rgba(0,0,0,0.5)"
+            },
+
+            font:{
+                face:"monospace",
+                size:13,
+                color:"white"
+            }
+        },
+
+        interaction:{
+            hover:true,
+            dragNodes:true,
+            zoomView:true
+        }
+
+    };
+
+
+    // =========================================
+    // CREATE NETWORK
+    // =========================================
+
+    const container = document.getElementById("mynetwork");
+
+    const data = {
+        nodes:nodes,
+        edges:edges
+    };
+
+    const network = new vis.Network(
+        container,
+        data,
+        options
+    );
+
+
+    // =========================================
+    // DISABLE PHYSICS
+    // =========================================
+
+    setTimeout(function(){
+
+        network.setOptions({
+            physics:{
+                enabled:false
+            }
+        });
+
+    },4000);
+
+
+    // =========================================
+    // NODE INFORMATION
+    // =========================================
+
+    const nodeInfo = {
+
+        retriever:{
+            title:"RETRIEVER AGENT",
+            layer:"Agent Layer",
+            purpose:"Fetches relevant research papers.",
+            details:[
+                "Uses Semantic Scholar API",
+                "Uses arXiv fallback",
+                "Filters top relevant papers"
+            ]
+        },
+
+        vector_store:{
+            title:"VECTOR STORE",
+            layer:"Storage Layer",
+            purpose:"Stores semantic embeddings.",
+            details:[
+                "Supports semantic search",
+                "Stores vector representations",
+                "Improves contextual retrieval"
+            ]
+        },
+
+        cache:{
+            title:"CACHE SYSTEM",
+            layer:"Storage Layer",
+            purpose:"Reduces repeated API and LLM calls.",
+            details:[
+                "Stores previous outputs",
+                "Improves response speed",
+                "Reduces token usage"
+            ]
+        },
+
+        insight_extractor:{
+            title:"INSIGHT EXTRACTOR",
+            layer:"Core Intelligence",
+            purpose:"Extracts structured research insights.",
+            details:[
+                "Extracts keywords",
+                "Finds technical insights",
+                "Builds structured research context"
+            ]
+        },
+
+        summarizer:{
+            title:"SUMMARIZER AGENT",
+            layer:"Research Agent",
+            purpose:"Creates high-level summaries.",
+            details:[
+                "Builds concise summaries",
+                "Finds common themes",
+                "Extracts important findings"
+            ]
+        },
+
+        analyzer:{
+            title:"ANALYZER AGENT",
+            layer:"Research Agent",
+            purpose:"Performs deeper research reasoning.",
+            details:[
+                "Detects research patterns",
+                "Finds agreements/disagreements",
+                "Identifies trends"
+            ]
+        },
+
+        gap_finder:{
+            title:"GAP FINDER",
+            layer:"Research Agent",
+            purpose:"Finds unexplored research areas.",
+            details:[
+                "Detects research limitations",
+                "Finds future directions",
+                "Identifies strategic opportunities"
+            ]
+        },
+
+        llm_service:{
+            title:"LLM SERVICE",
+            layer:"Service Layer",
+            purpose:"Centralized AI inference gateway.",
+            details:[
+                "Gemini primary model",
+                "Groq fallback model",
+                "Caching + grounding logic"
+            ]
+        },
+
+        output:{
+            title:"OUTPUT NODE",
+            layer:"Core Layer",
+            purpose:"Final research intelligence output.",
+            details:[
+                "Combines agent outputs",
+                "Builds final research report",
+                "Returns structured insights"
+            ]
+        }
+
+    };
+
+
+    // =========================================
+    // CLICK HANDLER
+    // =========================================
+
+    network.on("click", function(params){
+
+        if(params.nodes.length > 0){
+
+            const nodeId = params.nodes[0];
+
+            const info = nodeInfo[nodeId];
+
+            if(info){
+
+                document.getElementById("infoTitle").innerText =
+                    info.title;
+
+                document.getElementById("infoContent").innerHTML = `
+
+                    <div class="info-section">
+
+                        <div class="info-label">
+                            Layer
+                        </div>
+
+                        ${info.layer}
+
+                    </div>
+
+                    <div class="info-section">
+
+                        <div class="info-label">
+                            Purpose
+                        </div>
+
+                        ${info.purpose}
+
+                    </div>
+
+                    <div class="info-section">
+
+                        <div class="info-label">
+                            Responsibilities
+                        </div>
+
+                        <ul>
+                            ${info.details.map(
+                                d => `<li>${d}</li>`
+                            ).join("")}
+                        </ul>
+
+                    </div>
+                `;
+            }
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
