@@ -266,65 +266,488 @@ setCurrentStep(5)
   "
 >
 
-        {/* ─── HERO ─── */}
-        <div className="mb-20 relative">
+{/* ─── HERO ─── */}
 
-          {/* floating badge */}
-          <div className="anim-fade-up delay-1 inline-flex items-center gap-3 hero-badge px-5 py-2.5 rounded-full mb-10 cursor-default select-none">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"
-                 style={{ animation: 'neural-pulse 1.8s ease infinite' }} />
-            <span className="text-cyan-300 text-xs tracking-widest uppercase"
-                  style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.15em' }}>
-              Multi-Agent AI Research Platform
+<div className="mb-24 relative overflow-hidden">
+
+  {/* ambient neural glow */}
+
+  <div
+    className="
+      absolute
+      right-[-180px]
+      top-[-120px]
+
+      w-[620px]
+      h-[620px]
+
+      rounded-full
+      blur-3xl
+      pointer-events-none
+      z-0
+    "
+    style={{
+      background:
+        'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 72%)'
+    }}
+  />
+
+  {/* HERO GRID */}
+
+  <div
+    className="
+      relative
+      z-10
+
+      grid
+      lg:grid-cols-1
+2xl:grid-cols-[1fr_600px]
+      gap-16
+      items-center
+    "
+  >
+
+    {/* =========================================================
+       LEFT SIDE
+    ========================================================= */}
+
+    <div>
+
+      {/* floating badge */}
+
+      <div
+        className="
+          anim-fade-up
+          delay-1
+
+          inline-flex
+          items-center
+          gap-3
+
+          hero-badge
+
+          px-5
+          py-2.5
+
+          rounded-full
+          mb-10
+
+          cursor-default
+          select-none
+        "
+      >
+
+        <div
+          className="
+            w-1.5
+            h-1.5
+            rounded-full
+            bg-cyan-400
+          "
+          style={{
+            animation:
+              'neural-pulse 1.8s ease infinite'
+          }}
+        />
+
+        <span
+          className="
+            text-cyan-300
+            text-xs
+            tracking-widest
+            uppercase
+          "
+          style={{
+            fontFamily:
+              'var(--font-display)',
+
+            letterSpacing:
+              '0.15em'
+          }}
+        >
+          Multi-Agent AI Research Platform
+        </span>
+
+        <div
+          className="
+            w-px
+            h-3
+            bg-cyan-500/30
+            mx-1
+          "
+        />
+
+        <span
+          className="
+            text-cyan-500/60
+            text-xs
+          "
+          style={{
+            fontFamily:
+              'var(--font-display)'
+          }}
+        >
+          v2.0
+        </span>
+
+      </div>
+
+      {/* HEADLINE */}
+
+      <div className="anim-fade-up delay-2 mb-8">
+
+        <h2
+          className="
+            hero-title
+            font-black
+            leading-[0.98]
+            mb-3
+          "
+          style={{
+            fontSize:
+              'clamp(3rem, 7vw, 6.2rem)',
+
+            fontFamily:
+              'var(--font-display)'
+          }}
+        >
+
+          <span className="hero-title-glow">
+            Neural
+          </span>
+
+          <br />
+
+          <span className="gradient-text-animated">
+            Research
+          </span>
+
+          <br />
+
+          <span className="hero-title-glow">
+            Intelligence
+          </span>
+
+          <br />
+
+          <span className="gradient-text-animated">
+            Engine
+          </span>
+
+        </h2>
+
+      </div>
+
+      {/* SUBTEXT */}
+
+      <p
+        className="
+          anim-fade-up
+          delay-3
+
+          text-zinc-400
+          text-lg
+          leading-8
+          max-w-xl
+          mb-12
+        "
+        style={{
+          fontFamily:
+            'var(--font-body)',
+
+          fontWeight:
+            300
+        }}
+      >
+        Adaptive multi-agent synthesis,
+        semantic retrieval,
+        cross-paper reasoning,
+        intelligent clustering,
+        and feedback-driven research generation.
+      </p>
+
+      {/* STAT PILLS */}
+
+      <div
+        className="
+          anim-fade-up
+          delay-4
+
+          flex
+          flex-wrap
+          gap-3
+        "
+      >
+
+        {[
+          {
+            label: "Agents",
+            value: "8+"
+          },
+
+          {
+            label: "Sources",
+            value: "50K+"
+          },
+
+          {
+            label: "Modes",
+            value: "3"
+          },
+
+          {
+            label: "Latency",
+            value: "< 7s"
+          },
+
+        ].map((stat) => (
+
+          <div
+            key={stat.label}
+            className="
+              flex
+              items-center
+              gap-2
+
+              px-4
+              py-2
+
+              rounded-full
+            "
+            style={{
+              background:
+  'transparent',
+
+              border:
+                '1px solid rgba(255,255,255,0.04)',
+
+              backdropFilter:
+                'blur(20px)'
+            }}
+          >
+
+            <span
+              className="
+                text-zinc-300
+                text-sm
+                font-semibold
+              "
+              style={{
+                fontFamily:
+                  'var(--font-display)'
+              }}
+            >
+              {stat.value}
             </span>
-            <div className="w-px h-3 bg-cyan-500/30 mx-1" />
-            <span className="text-cyan-500/60 text-xs" style={{ fontFamily: 'var(--font-display)' }}>v2.0</span>
+
+            <span
+              className="
+                text-zinc-600
+                text-xs
+              "
+            >
+              {stat.label}
+            </span>
+
+          </div>
+        ))}
+
+      </div>
+
+    </div>
+
+    {/* =========================================================
+       RIGHT SIDE — LIVE ARCHITECTURE
+    ========================================================= */}
+
+    <div
+      className="
+        block mt-16 2xl:mt-0
+        relative
+      "
+    >
+
+      {/* frame glow */}
+
+      <div
+        className="
+          absolute
+          inset-0
+
+          rounded-[32px]
+
+          blur-3xl
+          pointer-events-none
+        "
+        style={{
+          background:
+            'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 72%)'
+        }}
+      />
+
+      {/* main frame */}
+
+      <div
+        className="
+          relative
+          overflow-hidden
+
+          rounded-[32px]
+        "
+        style={{
+          background:
+  'transparent',
+
+          border:
+            '1px solid rgba(255,255,255,0.04)',
+
+          backdropFilter:
+            'blur(24px)',
+
+          boxShadow:
+            '0 20px 80px rgba(0,0,0,0.45)'
+        }}
+      >
+
+        {/* TOP BAR */}
+
+        <div
+          className="
+            flex
+            items-center
+            justify-between
+
+            px-6
+            py-5
+          "
+          style={{
+            borderBottom:
+              '1px solid rgba(255,255,255,0.05)'
+          }}
+        >
+
+          {/* left */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+            "
+          >
+
+            <div
+              className="
+                w-2
+                h-2
+                rounded-full
+                bg-cyan-400
+              "
+              style={{
+                animation:
+                  'neural-pulse 2s ease infinite'
+              }}
+            />
+
+            <span
+              className="
+                text-xs
+                uppercase
+                tracking-[0.18em]
+                text-cyan-300
+              "
+              style={{
+                fontFamily:
+                  'var(--font-display)'
+              }}
+            >
+              Neural Architecture
+            </span>
+
           </div>
 
-          {/* headline */}
-          <div className="anim-fade-up delay-2 mb-8">
-            <h2 className="hero-title font-black leading-[1.04] mb-3"
-                style={{ fontSize: 'clamp(3rem, 7vw, 6rem)', fontFamily: 'var(--font-display)' }}>
-              <span className="hero-title-glow">Neural Research</span>
-              <br />
-              <span className="gradient-text-animated">Intelligence</span>
-              <br />
-              <span className="hero-title-glow">Engine</span>
-            </h2>
+          {/* right */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
+
+            <div
+              className="
+                w-2
+                h-2
+                rounded-full
+                bg-emerald-400
+              "
+            />
+
+            <span
+              className="
+                text-[11px]
+                text-zinc-500
+                uppercase
+                tracking-[0.14em]
+              "
+            >
+              Live System
+            </span>
+
           </div>
 
-          {/* sub-headline */}
-          <p className="anim-fade-up delay-3 text-zinc-400 text-lg leading-8 max-w-xl mb-12"
-             style={{ fontFamily: 'var(--font-body)', fontWeight: 300 }}>
-            Adaptive multi-agent synthesis, semantic retrieval,
-            cross-paper reasoning, intelligent clustering,
-            and feedback-driven research generation.
-          </p>
-
-          {/* stat pills row */}
-          <div className="anim-fade-up delay-4 flex flex-wrap gap-3">
-            {[
-              { label: "Agents", value: "8+" },
-              { label: "Sources", value: "50K+" },
-              { label: "Modes", value: "3" },
-              { label: "Latency", value: "< 7s" },
-            ].map((stat) => (
-              <div key={stat.label}
-                   className="flex items-center gap-2 px-4 py-2 rounded-full"
-                   style={{
-                     background: 'rgba(255,255,255,0.025)',
-                     border: '1px solid rgba(255,255,255,0.06)',
-                   }}>
-                <span className="text-zinc-300 text-sm font-semibold"
-                      style={{ fontFamily: 'var(--font-display)' }}>
-                  {stat.value}
-                </span>
-                <span className="text-zinc-600 text-xs">{stat.label}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
+        {/* EMBED */}
+
+        <div
+          className="
+            relative
+            overflow-hidden
+          "
+        >
+
+          {/* subtle overlay */}
+
+          <div
+            className="
+              absolute
+              inset-0
+              pointer-events-none
+              z-20
+            "
+            style={{
+              background:
+                'linear-gradient(to bottom, rgba(0,0,0,0.08), transparent 12%, transparent 88%, rgba(0,0,0,0.12))'
+            }}
+          />
+
+          {/* graph */}
+
+          <iframe
+            src="/codegraph.html"
+            title="Architecture Graph"
+
+            className="
+              w-full
+h-[420px] md:h-[520px] 2xl:h-[620px]              relative
+              z-10
+            "
+          />
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+          
         {/* ─── INPUT PANEL ─── */}
         <div className="anim-fade-up delay-3 input-panel rounded-[36px] p-8 md:p-10 mb-6">
 
