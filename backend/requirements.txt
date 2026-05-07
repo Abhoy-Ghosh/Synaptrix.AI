@@ -9,7 +9,7 @@ sentence-transformers
 transformers
 torch
 groq
-google-generativeai
+google-genai
 reportlab
 fpdf
 PyPDF2
