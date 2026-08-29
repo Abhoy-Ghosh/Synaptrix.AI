@@ -1,10 +1,12 @@
 # Python
 venv/
+backend/venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .pytest_cache/
+backend/.pytest_cache/
 
 # Env
 .env
@@ -24,12 +26,11 @@ Thumbs.db
 *.npy
 *.index
 knowledge_base/
-cache/
 backend/models/
 backend/app/synaptrix.db
 backend/synaptrix.db
 
-# Cache files
+# Cache data files
 backend/app/cache/cache.json
 backend/app/services/llm_cache.json
 
