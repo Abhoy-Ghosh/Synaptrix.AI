@@ -22,7 +22,3 @@ services:
         sync: false
       - key: PORT
         value: "8001"
-    disk:
-      name: synaptrix-data
-      mountPath: /opt/render/project/data
-      sizeGB: 1
