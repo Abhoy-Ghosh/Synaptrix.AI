@@ -13,6 +13,7 @@ def load_data():
 
 
 def save_data(data):
+    os.makedirs(BASE_DIR, exist_ok=True)
     with open(FILE, "w") as f:
         json.dump(data, f)
 

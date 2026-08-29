@@ -13,6 +13,7 @@ def load_feedback():
 
 
 def save_feedback(data):
+    os.makedirs(BASE_DIR, exist_ok=True)
     with open(FEEDBACK_FILE, "w") as f:
         json.dump(data, f)
 

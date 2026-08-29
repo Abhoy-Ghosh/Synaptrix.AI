@@ -49,16 +49,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORS — configurable via ALLOWED_ORIGINS env var
-allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS — robust handling for Vercel, localhost, and custom domains
+raw_origins = os.environ.get("ALLOWED_ORIGINS", "*").strip()
+if raw_origins == "*" or not raw_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    origins_list = [o.strip() for o in raw_origins.split(",") if o.strip()]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # -----------------------------
 # ROUTES

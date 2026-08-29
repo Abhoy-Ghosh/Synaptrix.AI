@@ -64,7 +64,7 @@ def load_cache():
 def save_cache(data):
 
     try:
-
+        os.makedirs(BASE_DIR, exist_ok=True)
         with open(
             CACHE_FILE,
             "w",
