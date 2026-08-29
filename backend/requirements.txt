@@ -1,18 +1,31 @@
-fastapi
-uvicorn
-pydantic
-python-dotenv
-requests
-numpy
-scikit-learn
-sentence-transformers
-transformers
-torch
-groq
-google-genai
-reportlab
-fpdf
-PyPDF2
-python-multipart
-aiofiles
-httpx
+# Core web framework
+fastapi==0.115.12
+uvicorn==0.34.3
+pydantic==2.11.5
+python-dotenv==1.1.0
+python-multipart==0.0.20
+
+# HTTP clients
+requests==2.32.3
+httpx==0.28.1
+aiofiles==24.1.0
+
+# AI / ML
+sentence-transformers==4.1.0
+transformers==4.52.4
+numpy==2.3.0
+scikit-learn==1.7.0
+faiss-cpu==1.11.0
+
+# LLM providers
+groq==0.25.0
+google-genai==1.19.0
+
+# PDF generation
+reportlab==4.4.0
+fpdf==1.7.2
+PyPDF2==3.0.1
+
+# Graph tools (optional — used by code_graph tool)
+networkx==3.5
+pyvis==0.3.2

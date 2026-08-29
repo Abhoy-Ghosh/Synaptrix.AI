@@ -1,7 +1,5 @@
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
-model = SentenceTransformer('all-mpnet-base-v2')
+from app.services.model_loader import get_embedding_model
 
 
 def cluster_papers(papers, threshold=0.75):
@@ -10,6 +8,7 @@ def cluster_papers(papers, threshold=0.75):
     if len(papers) < 2:
         return [papers]
 
+    model = get_embedding_model()
     texts = [p["abstract"][:300] for p in papers]
     embeddings = model.encode(texts, normalize_embeddings=True)
 

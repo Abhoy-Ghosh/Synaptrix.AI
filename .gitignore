@@ -4,12 +4,15 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 
 # Env
 .env
+backend/.env
 
 # OS
 .DS_Store
+Thumbs.db
 
 # VS Code
 .vscode/
@@ -17,8 +20,34 @@ __pycache__/
 # Logs
 *.log
 
-# Data / Models
+# Data / Models (downloaded at runtime / Docker build)
 *.npy
 *.index
 knowledge_base/
 cache/
+backend/models/
+backend/app/synaptrix.db
+backend/synaptrix.db
+
+# Cache files
+backend/app/cache/cache.json
+backend/app/services/llm_cache.json
+
+# Feedback data (generated at runtime)
+backend/feedback.json
+backend/paper_feedback.json
+backend/app/feedback/feedback.json
+backend/app/feedback/paper_feedback.json
+
+# Generated files
+codebase_graph.html
+codebase_graph.png
+codegraph_new.html
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# SYNAPTRIX backup folder
+SYNAPTRIX/

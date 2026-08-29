@@ -1,0 +1,114 @@
+abhoy@Abhoy-481:/mnt/d/research-synthesizer$ cd backend
+abhoy@Abhoy-481:/mnt/d/research-synthesizer/backend$ source venv/bin/activate
+(venv) abhoy@Abhoy-481:/mnt/d/research-synthesizer/backend$ python -m uvicorn app.main:app --reload --port 8001
+INFO:     Will watch for changes in these directories: ['/mnt/d/research-synthesizer/backend']
+INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [588] using WatchFiles
+INFO:     Started server process [606]
+INFO:     Waiting for application startup.
+🚀 Starting Synaptrix AI...
+🔥 Loading embedding model...
+✅ Model loaded in 7.41 seconds
+✅ Embedding model warm
+✅ Warmup complete
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54938 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58294 - "OPTIONS /generate HTTP/1.1" 200 OK
+🔥 PIPELINE RUNNING
+🚀 PIPELINE RUNNING
+📄 Relevant vector papers: 0
+🌐 Fetching fresh data
+🌐 Multi-source retrieval started
+📚 Fetching from Semantic Scholar...
+❌ Semantic Scholar API error: 403
+📘 Fetching from IEEE Xplore...
+❌ IEEE API error: 403
+📗 Fetching from Springer...
+❌ Springer API error: 400
+⚠️ Weak retrieval → using arXiv fallback
+📚 Fetching from arXiv...
+✅ arXiv returned 7 papers
+✅ Total papers after cleaning: 7
+✅ Created FAISS index with 7 docs
+DEBUG: top_papers = 3
+🧠 Extracting insights...
+⚠️ Gemini failed → Groq fallback | ClientError
+🚀 CALLING GROQ...
+✅ Groq success
+DEBUG LOG -> LLM OUTPUT: {
+  "points": [
+    "Conventional agent negotiation relies on pre-defined heuris ...
+⚠️ Gemini failed → Groq fallback | ClientError
+🚀 CALLING GROQ...
+✅ Groq success
+DEBUG LOG -> LLM OUTPUT: {
+  "points": [
+    "LLMs are optimized for language generation, limiting their  ...
+⚠️ Gemini failed → Groq fallback | ClientError
+🚀 CALLING GROQ...
+✅ Groq success
+DEBUG LOG -> LLM OUTPUT: {
+  "points": [
+    "Proposes a methodology for modeling and simulating complex  ...
+⚙️ MODE: fast
+⚡ FAST MODE (single LLM call)
+⚡ FAST MODE (single LLM call)
+⚠️ Gemini failed → Groq fallback | ClientError
+🚀 CALLING GROQ...
+✅ Groq success
+DEBUG LOG -> LLM OUTPUT: # Research Intelligence Report
+
+## Key Insights
+* Multi-agent systems using larg ...
+🧠 Cluster-based synthesis working...
+🧠 Cluster-based synthesis working...
+🧠 Clustering papers...
+🧠 Clustering papers...
+⚠️ Gemini failed → Groq fallback | ClientError
+🚀 CALLING GROQ...
+✅ Groq success
+DEBUG LOG -> LLM OUTPUT: # Cluster Intelligence
+
+## Cluster Relationships
+- Cluster 1 and Cluster 3 share ...
+
+============= SYNTHESIS RAW =============
+
+# Cluster Intelligence
+
+## Cluster Relationships
+- Cluster 1 and Cluster 3 share a focus on optimizing agent-based systems, but Cluster 1 uses LLMs for intelligent shopfloor management, while Cluster 3 focuses on modeling and simulating complex systems.
+- Cluster 2 diverges from the other two, focusing on improving LLM performance by learning from unsuccessful trajectories.
+
+## Contrasting Research Directions
+- Cluster 1 and Cluster 3 differ in their approaches to optimizing agent-based systems, with Cluster 1 relying on LLMs and Cluster 3 using a generic agent-based meta-model.
+- Cluster 2 takes a different approach to improving LLM performance, focusing on learning from unsuccessful trajectories.
+
+## Emerging Trends
+- The use of LLMs in agent-based systems is an emerging trend, as seen in Cluster 1.
+- The importance of learning from unsuccessful trajectories is also an emerging trend, as seen in Cluster 2.
+
+## Cross-Domain Insights
+- None
+
+## Strategic Observations
+- The use of LLMs in agent-based systems offers potential for intelligent shopfloor management and complex system modeling.
+- However, the effectiveness of LLMs as agents is still a topic of debate, as seen in Cluster 2.
+
+## Unified Research Understanding
+- The use of LLMs in agent-based systems offers potential for optimizing complex systems, but the approach must be tailored to the specific application.
+- Learning from unsuccessful trajectories is a valuable approach for improving LLM performance, but it requir
+
+=========================================
+
+🤖 Similarity Agent working...
+🔄 Loading similarity model...
+INFO:     127.0.0.1:58294 - "POST /generate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56428 - "OPTIONS /paper-feedback HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56428 - "POST /paper-feedback HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56440 - "POST /paper-feedback HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50808 - "POST /paper-feedback HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40314 - "OPTIONS /feedback HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40314 - "POST /feedback HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40324 - "OPTIONS /generate-pdf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:40324 - "POST /generate-pdf HTTP/1.1" 200 OK

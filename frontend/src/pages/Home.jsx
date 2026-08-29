@@ -2,42 +2,160 @@ import { useState, useEffect, useRef } from "react"
 
 import {
   generateResearch,
-  submitGlobalFeedback
+  submitGlobalFeedback,
+  fetchProjects,
+  createProject,
+  deleteProject,
+  fetchProjectChats,
+  createChat,
+  fetchChatDetail,
+  deleteChat,
+  sendChatMessage,
+  downloadResearchPDF
 } from "../services/api"
 
+import { useTheme, ThemeToggle } from "../components/ThemeProvider"
+import Sidebar from "../components/Sidebar"
 import PaperCard from "../components/PaperCard"
 import PipelineStatus from "../components/PipelineStatus"
-import LoadingSkeleton from "../components/LoadingSkeleton"
 import RichTextRenderer from "../components/RichTextRenderer"
+import ExportMenu from "../components/ExportMenu"
+import SearchModal from "../components/SearchModal"
+import KnowledgeGraph from "../components/KnowledgeGraph"
 
-import { downloadResearchPDF } from "../services/api"
 /* ── tiny helpers ── */
 const TAB_META = {
-  summary:   { label: "Summary",   icon: "◈", desc: "AI-generated synthesis" },
-  analysis:  { label: "Analysis",  icon: "⬡", desc: "Deep pattern analysis" },
-  gaps:      { label: "Gaps",      icon: "◇", desc: "Research opportunities" },
-  synthesis: { label: "Synthesis", icon: "⊕", desc: "Cross-paper reasoning" },
-  papers:    { label: "Papers",    icon: "◉", desc: "Source documents" },
+  summary:   { label: "Summary",   icon: "◈" },
+  analysis:  { label: "Analysis",  icon: "⬡" },
+  gaps:      { label: "Gaps",      icon: "◇" },
+  synthesis: { label: "Synthesis", icon: "⊕" },
+  papers:    { label: "Papers",    icon: "◉" },
 }
 
 const Home = () => {
+  const { isDark } = useTheme()
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [projects, setProjects] = useState([])
+  const [expandedProjects, setExpandedProjects] = useState({})
+  const [projectChatsMap, setProjectChatsMap] = useState({})
+
+  const [activeProjectId, setActiveProjectId] = useState(null)
+  const [activeChatId, setActiveChatId] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [turnActiveTabs, setTurnActiveTabs] = useState({}) // { msgId: 'summary' | 'analysis' | ... }
 
   const [topic, setTopic]               = useState("")
   const [mode, setMode]                 = useState("fast")
   const [loading, setLoading]           = useState(false)
-  const [result, setResult]             = useState(null)
-  const [activeTab, setActiveTab]       = useState("summary")
   const [currentStep, setCurrentStep]   = useState(-1)
   const [globalFeedback, setGlobalFeedback] = useState("")
 
-  const [generationTime, setGenerationTime] = useState(null)
-
-const [credits, setCredits] = useState(300)
-
-  /* navbar scroll state */
   const [scrolled, setScrolled]         = useState(false)
   const [charCount, setCharCount]       = useState(0)
-  const resultsRef                      = useRef(null)
+  const chatStreamEndRef                = useRef(null)
+
+  /* ── New feature states ── */
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [showKnowledgeGraph, setShowKnowledgeGraph] = useState(false)
+
+  /* ── Load Projects on Mount ── */
+  useEffect(() => {
+    loadProjectsList()
+  }, [])
+
+  const loadProjectsList = async () => {
+    try {
+      const data = await fetchProjects()
+      setProjects(data)
+    } catch (err) {
+      console.error("Failed to load projects:", err)
+    }
+  }
+
+  const loadChatsForProject = async (projId) => {
+    try {
+      const chats = await fetchProjectChats(projId)
+      setProjectChatsMap(prev => ({ ...prev, [projId]: chats }))
+    } catch (err) {
+      console.error("Failed to load project chats:", err)
+    }
+  }
+
+  const handleSelectProject = (projId) => {
+    setActiveProjectId(projId)
+    setExpandedProjects(prev => ({ ...prev, [projId]: !prev[projId] }))
+    if (!projectChatsMap[projId]) {
+      loadChatsForProject(projId)
+    }
+  }
+
+  const handleSelectChat = async (projId, chatId) => {
+    setActiveProjectId(projId)
+    setActiveChatId(chatId)
+    setShowKnowledgeGraph(false)
+    setLoading(true)
+
+    try {
+      const detail = await fetchChatDetail(chatId)
+      setMessages(detail.messages || [])
+      setMode(detail.chat?.mode || "fast")
+    } catch (err) {
+      console.error("Failed to load chat details:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateProject = async (name, topicArea) => {
+    try {
+      const proj = await createProject(name, topicArea)
+      await loadProjectsList()
+      setActiveProjectId(proj.id)
+      setExpandedProjects(prev => ({ ...prev, [proj.id]: true }))
+      const chat = await createChat(proj.id, "Session 1", "parallel")
+      await loadChatsForProject(proj.id)
+      handleSelectChat(proj.id, chat.id)
+    } catch (err) {
+      console.error("Failed to create project:", err)
+    }
+  }
+
+  const handleDeleteProject = async (projId) => {
+    try {
+      await deleteProject(projId)
+      if (activeProjectId === projId) {
+        setActiveProjectId(null)
+        setActiveChatId(null)
+        setMessages([])
+      }
+      loadProjectsList()
+    } catch (err) {
+      console.error("Failed to delete project:", err)
+    }
+  }
+
+  const handleCreateChat = async (projId, title, chatMode) => {
+    try {
+      const chat = await createChat(projId, title, chatMode)
+      await loadChatsForProject(projId)
+      handleSelectChat(projId, chat.id)
+    } catch (err) {
+      console.error("Failed to create chat:", err)
+    }
+  }
+
+  const handleDeleteChat = async (projId, chatId) => {
+    try {
+      await deleteChat(chatId)
+      if (activeChatId === chatId) {
+        setActiveChatId(null)
+        setMessages([])
+      }
+      loadChatsForProject(projId)
+    } catch (err) {
+      console.error("Failed to delete chat:", err)
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -45,120 +163,87 @@ const [credits, setCredits] = useState(300)
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
-  /* ─── GENERATE ─── */
- /* ─── GENERATE ─── */
+  /* Ctrl+K global search shortcut */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen(prev => !prev)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [])
 
-const handleGenerate = async () => {
+  /* Scroll chat stream to bottom when new messages arrive */
+  useEffect(() => {
+    chatStreamEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, loading])
 
-  if (!topic.trim()) return
+  /* ─── GENERATE / SEND CHAT MESSAGE ─── */
+  const handleGenerate = async () => {
+    const queryText = topic.trim()
+    if (!queryText) return
 
-  if (credits <= 0) {
+    try {
+      setLoading(true)
+      setGlobalFeedback("")
 
-    alert("No credits remaining")
+      let step = 0
+      setCurrentStep(step)
+      const interval = setInterval(() => {
+        step++
+        if (step <= 5) setCurrentStep(step)
+      }, 1400)
 
-    return
+      let targetChatId = activeChatId
+
+      // Auto-create project and chat if user asks from landing page
+      if (!targetChatId) {
+        let projId = activeProjectId
+        if (!projId) {
+          const newProj = await createProject("Research Workspace", queryText.slice(0, 30))
+          projId = newProj.id
+          await loadProjectsList()
+        }
+        const newChat = await createChat(projId, queryText.slice(0, 25), mode)
+        await loadChatsForProject(projId)
+        targetChatId = newChat.id
+        setActiveProjectId(projId)
+        setActiveChatId(targetChatId)
+      }
+
+      // Optimistically add user message to screen immediately
+      setMessages(prev => [
+        ...prev,
+        { id: `temp-user-${Date.now()}`, role: "user", content: queryText }
+      ])
+      setTopic("")
+
+      // Send to backend
+      await sendChatMessage(targetChatId, queryText, mode)
+
+      clearInterval(interval)
+      setCurrentStep(5)
+
+      // Fetch official updated chat messages from backend database
+      const detail = await fetchChatDetail(targetChatId)
+      setMessages(detail.messages || [])
+
+    } catch (err) {
+      console.error("Generation error:", err)
+    } finally {
+      setLoading(false)
+      setCurrentStep(-1)
+    }
   }
 
-  try {
-
-    setLoading(true)
-
-    setResult(null)
-
-    setGlobalFeedback("")
-
-    const startTime =
-      performance.now()
-
-    /* pipeline status */
-
-/* pipeline animation */
-
-let step = 0
-
-setCurrentStep(step)
-
-const interval = setInterval(() => {
-
-  step++
-
-  if (step <= 5) {
-    setCurrentStep(step)
-  }
-
-}, 1400)
-
-/* backend call */
-
-const data =
-  await generateResearch(
-    topic,
-    mode
-  )
-
-/* stop animation */
-
-clearInterval(interval)
-
-setCurrentStep(5)
-
-    setResult(data)
-
-    /* timing */
-
-    const endTime =
-      performance.now()
-
-    const totalSeconds =
-      (
-        (endTime - startTime) / 1000
-      ).toFixed(1)
-
-    setGenerationTime(totalSeconds)
-
-    /* credits */
-
-    if (mode === "fast") {
-      setCredits(prev => prev - 1)
-    }
-
-    if (mode === "parallel") {
-      setCredits(prev => prev - 3)
-    }
-
-    if (mode === "research") {
-      setCredits(prev => prev - 6)
-    }
-
-    /* scroll */
-
-    setTimeout(() => {
-
-      resultsRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      })
-
-    }, 120)
-
-  } catch (err) {
-
-    console.log(err)
-
-  } finally {
-
-    setLoading(false)
-
-    setCurrentStep(-1)
-  }
-}
-  /* ─── GLOBAL FEEDBACK ─── */
   const handleGlobalFeedback = async (type) => {
     try {
-      await submitGlobalFeedback(topic, type)
+      await submitGlobalFeedback("research", type)
       setGlobalFeedback(type)
     } catch (err) {
-      console.log(err)
+      console.error(err)
     }
   }
 
@@ -167,7 +252,32 @@ setCurrentStep(5)
     setCharCount(e.target.value.length)
   }
 
-  const tabs = Object.keys(TAB_META)
+  const setTurnTab = (msgId, tabKey) => {
+    setTurnActiveTabs(prev => ({ ...prev, [msgId]: tabKey }))
+  }
+
+  /* Search navigation handler */
+  const handleSearchNavigate = (type, item) => {
+    if (type === "project") {
+      handleSelectProject(item.id)
+    } else if (type === "chat") {
+      const projId = item.project_id
+      if (projId) {
+        handleSelectChat(projId, item.id)
+      }
+    } else if (type === "message") {
+      const chatId = item.chat_id
+      if (chatId) {
+        // Try to find the project for this chat and navigate
+        setActiveChatId(chatId)
+        fetchChatDetail(chatId).then(detail => {
+          setMessages(detail.messages || [])
+        })
+      }
+    }
+  }
+
+  const isChatActive = Boolean(activeChatId || messages.length > 0 || loading)
 
   return (
     <div className="min-h-screen text-white overflow-x-hidden" style={{ background: 'var(--bg-deep)' }}>
@@ -178,11 +288,17 @@ setCurrentStep(5)
         <div className="ambient-orb orb-2" />
         <div className="ambient-orb orb-3" />
         <div className="absolute inset-0 neural-bg opacity-60" />
-        {/* subtle vignette */}
         <div className="absolute inset-0" style={{
           background: 'radial-gradient(ellipse 120% 80% at 50% 0%, transparent 40%, rgba(5,8,16,0.8) 100%)'
         }} />
       </div>
+
+      {/* ─── GLOBAL SEARCH MODAL ─── */}
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={handleSearchNavigate}
+      />
 
       {/* ─── STICKY NAVBAR ─── */}
       <nav className={`sticky top-0 z-50 navbar-glass ${scrolled ? "scrolled" : ""}`}
@@ -190,7 +306,7 @@ setCurrentStep(5)
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
 
           {/* LEFT — logo + brand */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => { setActiveChatId(null); setMessages([]); setShowKnowledgeGraph(false); }}>
             <div className="logo-container bg-white rounded-[22px] p-1.5 shadow-xl shadow-blue-500/10">
               <img
                 src="/logo.png"
@@ -212,51 +328,42 @@ setCurrentStep(5)
 
           {/* RIGHT — nav actions */}
           <div className="flex items-center gap-3">
-        <a
-  href="/guide"
-  className="
-    px-4
-    py-2
-    rounded-full
 
-    text-sm
-    text-zinc-400
+            {/* Search Button */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="nav-action-btn"
+              title="Search (Ctrl+K)"
+            >
+              🔍 <span className="hidden sm:inline text-xs">Search</span>
+              <kbd className="nav-kbd">⌘K</kbd>
+            </button>
 
-    transition-all
-    duration-300
-  "
-  style={{
-    border:
-      '1px solid rgba(255,255,255,0.06)',
+            {/* Knowledge Graph Toggle */}
+            <button
+              onClick={() => setShowKnowledgeGraph(!showKnowledgeGraph)}
+              className={`nav-action-btn ${showKnowledgeGraph ? "active" : ""}`}
+              title="Knowledge Graph"
+            >
+              🧠 <span className="hidden sm:inline text-xs">Graph</span>
+            </button>
 
-    background:
-      'rgba(255,255,255,0.02)',
+            {/* Dashboard Link */}
+            <a
+              href="/dashboard"
+              className="nav-action-btn"
+              title="Research Dashboard"
+            >
+              📊 <span className="hidden sm:inline text-xs">Dashboard</span>
+            </a>
 
-    backdropFilter:
-      'blur(20px)'
-  }}
+            <a
+              href="/guide"
+              className="nav-action-btn"
+            >
+              📖 <span className="hidden sm:inline text-xs">Guide</span>
+            </a>
 
-  onMouseEnter={(e) => {
-    e.currentTarget.style.borderColor =
-      'rgba(59,130,246,0.25)'
-
-    e.currentTarget.style.color =
-      '#ffffff'
-  }}
-
-  onMouseLeave={(e) => {
-    e.currentTarget.style.borderColor =
-      'rgba(255,255,255,0.06)'
-
-    e.currentTarget.style.color =
-      '#a1a1aa'
-  }}
->
-  Guide
-</a>
-
-
-            {/* mode indicator pill */}
             <div className="hidden sm:flex items-center gap-2 counter-badge px-4 py-2 rounded-full">
               <span className="text-zinc-400">
                 {mode === "fast" ? "⚡" : mode === "parallel" ? "🔄" : "🧠"}
@@ -267,7 +374,6 @@ setCurrentStep(5)
               </span>
             </div>
 
-            {/* status badge */}
             <div className="status-badge flex items-center gap-2.5 px-4 py-2 rounded-full">
               <span className="relative flex w-2 h-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
@@ -278,1071 +384,311 @@ setCurrentStep(5)
                 Neural Active
               </span>
             </div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
           </div>
         </div>
 
-        {/* thin gradient underline */}
         <div className="absolute bottom-0 left-0 right-0 h-px"
              style={{
                background: 'linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.2) 30%, rgba(6,182,212,0.15) 50%, rgba(139,92,246,0.2) 70%, transparent 100%)'
              }} />
       </nav>
 
-      {/* ─── MAIN ─── */}
-      <div
-  className="
-    w-full
-
-    max-w-[1400px]
-
-    mx-auto
-
-    px-6
-    sm:px-8
-    md:px-10
-    lg:px-14
-    xl:px-20
-
-    py-16
-  "
->
-
-{/* ─── HERO ─── */}
-
-<div className="mb-24 relative overflow-hidden">
-
-  {/* ambient neural glow */}
-
-  <div
-    className="
-      absolute
-      right-[-180px]
-      top-[-120px]
-
-      w-[620px]
-      h-[620px]
-
-      rounded-full
-      blur-3xl
-      pointer-events-none
-      z-0
-    "
-    style={{
-      background:
-        'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 72%)'
-    }}
-  />
-
-  {/* HERO GRID */}
-
-  <div
-    className="
-      relative
-      z-10
-
-      grid
-      lg:grid-cols-1
-2xl:grid-cols-[1fr_600px]
-      gap-16
-      items-center
-    "
-  >
-
-    {/* =========================================================
-       LEFT SIDE
-    ========================================================= */}
-
-    <div>
-
-      {/* floating badge */}
-
-      <div
-        className="
-          anim-fade-up
-          delay-1
-
-          inline-flex
-          items-center
-          gap-3
-
-          hero-badge
-
-          px-5
-          py-2.5
-
-          rounded-full
-          mb-10
-
-          cursor-default
-          select-none
-        "
-      >
-
-        <div
-          className="
-            w-1.5
-            h-1.5
-            rounded-full
-            bg-cyan-400
-          "
-          style={{
-            animation:
-              'neural-pulse 1.8s ease infinite'
-          }}
+      {/* ─── WORKSPACE LAYOUT WITH SIDEBAR ─── */}
+      <div className="app-workspace-layout">
+        <Sidebar
+          projects={projects}
+          activeProjectId={activeProjectId}
+          activeChatId={activeChatId}
+          expandedProjects={expandedProjects}
+          projectChatsMap={projectChatsMap}
+          onSelectProject={handleSelectProject}
+          onSelectChat={handleSelectChat}
+          onCreateProject={handleCreateProject}
+          onDeleteProject={handleDeleteProject}
+          onCreateChat={handleCreateChat}
+          onDeleteChat={handleDeleteChat}
+          isOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
 
-        <span
-          className="
-            text-cyan-300
-            text-xs
-            tracking-widest
-            uppercase
-          "
-          style={{
-            fontFamily:
-              'var(--font-display)',
-
-            letterSpacing:
-              '0.15em'
-          }}
-        >
-          Multi-Agent AI Research Platform
-        </span>
-
-        <div
-          className="
-            w-px
-            h-3
-            bg-cyan-500/30
-            mx-1
-          "
-        />
-
-        <span
-          className="
-            text-cyan-500/60
-            text-xs
-          "
-          style={{
-            fontFamily:
-              'var(--font-display)'
-          }}
-        >
-          v2.0
-        </span>
-
-      </div>
-
-      {/* HEADLINE */}
-
-      <div className="anim-fade-up delay-2 mb-8">
-
-        <h2
-          className="
-            hero-title
-            font-black
-            leading-[0.98]
-            mb-3
-          "
-          style={{
-            fontSize:
-              'clamp(3rem, 7vw, 6.2rem)',
-
-            fontFamily:
-              'var(--font-display)'
-          }}
-        >
-
-          <span className="hero-title-glow">
-            Neural
-          </span>
-
-          <br />
-
-          <span className="gradient-text-animated">
-            Research
-          </span>
-
-          <br />
-
-          <span className="hero-title-glow">
-            Intelligence
-          </span>
-
-          <br />
-
-          <span className="gradient-text-animated">
-            Engine
-          </span>
-
-        </h2>
-
-      </div>
-
-      {/* SUBTEXT */}
-
-      <p
-        className="
-          anim-fade-up
-          delay-3
-
-          text-zinc-400
-          text-lg
-          leading-8
-          max-w-xl
-          mb-12
-        "
-        style={{
-          fontFamily:
-            'var(--font-body)',
-
-          fontWeight:
-            300
-        }}
-      >
-        Adaptive multi-agent synthesis,
-        semantic retrieval,
-        cross-paper reasoning,
-        intelligent clustering,
-        and feedback-driven research generation.
-      </p>
-
-      {/* STAT PILLS */}
-
-      <div
-        className="
-          anim-fade-up
-          delay-4
-
-          flex
-          flex-wrap
-          gap-3
-        "
-      >
-
-        {[
-          {
-            label: "Agents",
-            value: "8+"
-          },
-
-          {
-            label: "Sources",
-            value: "50K+"
-          },
-
-          {
-            label: "Modes",
-            value: "3"
-          },
-
-          {
-            label: "Latency",
-            value: "< 7s"
-          },
-
-        ].map((stat) => (
-
-          <div
-            key={stat.label}
-            className="
-              flex
-              items-center
-              gap-2
-
-              px-4
-              py-2
-
-              rounded-full
-            "
-            style={{
-              background:
-  'transparent',
-
-              border:
-                '1px solid rgba(255,255,255,0.04)',
-
-              backdropFilter:
-                'blur(20px)'
-            }}
-          >
-
-            <span
-              className="
-                text-zinc-300
-                text-sm
-                font-semibold
-              "
-              style={{
-                fontFamily:
-                  'var(--font-display)'
-              }}
-            >
-              {stat.value}
-            </span>
-
-            <span
-              className="
-                text-zinc-600
-                text-xs
-              "
-            >
-              {stat.label}
-            </span>
-
-          </div>
-        ))}
-
-      </div>
-
-    </div>
-
-    {/* =========================================================
-       RIGHT SIDE — LIVE ARCHITECTURE
-    ========================================================= */}
-
-    <div
-      className="
-        block mt-16 2xl:mt-0
-        relative
-      "
-    >
-
-      {/* frame glow */}
-
-      <div
-        className="
-          absolute
-          inset-0
-
-          rounded-[32px]
-
-          blur-3xl
-          pointer-events-none
-        "
-        style={{
-          background:
-            'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 72%)'
-        }}
-      />
-
-      {/* main frame */}
-
-      <div
-        className="
-          relative
-          overflow-hidden
-
-          rounded-[32px]
-        "
-        style={{
-          background:
-  'transparent',
-
-          border:
-            '1px solid rgba(255,255,255,0.04)',
-
-          backdropFilter:
-            'blur(24px)',
-
-          boxShadow:
-            '0 20px 80px rgba(0,0,0,0.45)'
-        }}
-      >
-
-        {/* TOP BAR */}
-
-        <div
-          className="
-            flex
-            items-center
-            justify-between
-
-            px-6
-            py-5
-          "
-          style={{
-            borderBottom:
-              '1px solid rgba(255,255,255,0.05)'
-          }}
-        >
-
-          {/* left */}
-
-          <div
-            className="
-              flex
-              items-center
-              gap-3
-            "
-          >
-
-            <div
-              className="
-                w-2
-                h-2
-                rounded-full
-                bg-cyan-400
-              "
-              style={{
-                animation:
-                  'neural-pulse 2s ease infinite'
-              }}
-            />
-
-            <span
-              className="
-                text-xs
-                uppercase
-                tracking-[0.18em]
-                text-cyan-300
-              "
-              style={{
-                fontFamily:
-                  'var(--font-display)'
-              }}
-            >
-              Neural Architecture
-            </span>
-
-          </div>
-
-          {/* right */}
-
-          <div
-            className="
-              flex
-              items-center
-              gap-2
-            "
-          >
-
-            <div
-              className="
-                w-2
-                h-2
-                rounded-full
-                bg-emerald-400
-              "
-            />
-
-            <span
-              className="
-                text-[11px]
-                text-zinc-500
-                uppercase
-                tracking-[0.14em]
-              "
-            >
-              Live System
-            </span>
-
-          </div>
-
-        </div>
-
-        {/* EMBED */}
-
-        <div
-          className="
-            relative
-            overflow-hidden
-          "
-        >
-
-          {/* subtle overlay */}
-
-          <div
-            className="
-              absolute
-              inset-0
-              pointer-events-none
-              z-20
-            "
-            style={{
-              background:
-                'linear-gradient(to bottom, rgba(0,0,0,0.08), transparent 12%, transparent 88%, rgba(0,0,0,0.12))'
-            }}
-          />
-
-          {/* graph */}
-
-          <iframe
-            src="/codegraph.html"
-            title="Architecture Graph"
-
-            className="
-              w-full
-h-[420px] md:h-[520px] 2xl:h-[620px]              relative
-              z-10
-            "
-          />
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-          
-        {/* ─── INPUT PANEL ─── */}
-        <div className="anim-fade-up delay-3 input-panel rounded-[36px] p-8 md:p-10 mb-6">
-
-          {/* panel top bar */}
-          <div className="input-top-bar flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                   style={{
-                     background: 'rgba(59,130,246,0.1)',
-                     border: '1px solid rgba(59,130,246,0.18)',
-                   }}>
-                <span style={{ fontSize: '14px' }}>◈</span>
-              </div>
-              <div>
-                <p className="text-xl text-zinc-400 uppercase tracking-widest"
-                   style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.14em' }}>
-                  Research Query
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {charCount > 0 && (
-                <span className="text-xs text-zinc-600 tabular-nums"
-                      style={{ fontFamily: 'var(--font-display)' }}>
-                  {charCount} chars
-                </span>
-              )}
-              <div className="w-1.5 h-1.5 rounded-full"
-                   style={{
-                     background: topic.trim() ? '#22c55e' : '#374151',
-                     boxShadow: topic.trim() ? '0 0 8px rgba(34,197,94,0.4)' : 'none',
-                     transition: 'all 0.3s ease',
-                   }} />
-            </div>
-          </div>
-
-          {/* textarea */}
-          <textarea
-            value={topic}
-            onChange={handleTopicChange}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate()
-            }}
-            placeholder="Describe your research topic in detail… e.g. 'Recent advances in transformer architectures for long-context understanding'"
-            className="ai-textarea w-full p-6 min-h-[180px] text-base mb-6"
-          />
-
-          {/* bottom bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* mode select */}
-              <div className="relative">
-                <select
-                  value={mode}
-                  onChange={(e) => setMode(e.target.value)}
-                  className="mode-select px-5 py-3.5 rounded-2xl text-sm"
-                >
-<option value="fast"  
-style={{
-    background: '#0f172a',
-    color: 'white'
-  }}>
-  ⚡ Fast Mode • 1 Credit
-</option>
-
-<option value="parallel"
- style={{
-    background: '#0f172a',
-    color: 'white'
-  }}>
-  🔄 Parallel Mode • 3 Credits
-</option>
-
-<option value="research"
- style={{
-    background: '#0f172a',
-    color: 'white'
-  }}>
-  🧠 Research Mode • 6 Credits
-</option>
-                </select>
-              </div>
-
-                          {/* credits */}
-
-<div
-  className="
-    hidden
-    md:flex
-
-    items-center
-    gap-2
-
-    px-4
-    py-2
-
-    rounded-full
-  "
-  style={{
-    background:
-      'rgba(59,130,246,0.08)',
-
-    border:
-      '1px solid rgba(59,130,246,0.12)',
-  }}
->
-
-  <div
-    className="
-      w-1.5
-      h-1.5
-      rounded-full
-      bg-cyan-400
-    "
-  />
-
-  <span
-    className="
-      text-xs
-      text-zinc-300
-    "
-    style={{
-      fontFamily:
-        'var(--font-display)',
-
-      letterSpacing:
-        '0.06em'
-    }}
-  >
-    {credits} Credits
-  </span>
-
-</div>
-            </div>
-
-            {/* generate button */}
-            <button
-              onClick={handleGenerate}
-              disabled={loading || !topic.trim()}
-              className="btn-generate px-10 py-4 rounded-2xl text-base text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:animation-none"
-              style={{ minWidth: '200px' }}
-            >
-              <span className="relative z-10 flex items-center justify-center gap-3">
-                {loading ? (
-                  <>
-                    <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    <span>Generating…</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Generate Research</span>
-                    <span style={{ fontSize: '18px' }}>→</span>
-                  </>
-                )}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* ─── PIPELINE ─── */}
-        {loading && (
-          <div className="anim-slide-down">
-            <PipelineStatus currentStep={currentStep} />
-          </div>
-        )}
-
-        {/* ─── SKELETON ─── */}
-        {loading && <LoadingSkeleton />}
-
-        {/* ─── RESULTS ─── */}
-        {result && (
-          <div className="mt-20 anim-fade-up" ref={resultsRef}>
-
-            {/* results header */}
-           
-
-<div className="flex items-center justify-between gap-6 mb-10">
-
-  {/* LEFT SIDE */}
-
-  <div className="flex items-center gap-4 flex-1">
-
-    <div className="h-px flex-1 divider-glow" />
-
-    <div
-      className="
-        flex
-        items-center
-        gap-3
-
-        px-5
-        py-2.5
-
-        rounded-full
-      "
-      style={{
-        background:
-          'rgba(59,130,246,0.06)',
-
-        border:
-          '1px solid rgba(59,130,246,0.12)',
-      }}
-    >
-
-      <div
-        className="
-          w-1.5
-          h-1.5
-          rounded-full
-          bg-blue-400
-        "
-        style={{
-          animation:
-            'neural-pulse 2s ease infinite'
-        }}
-      />
-
-      <span
-        className="
-          text-xs
-          text-blue-300
-          uppercase
-          tracking-widest
-        "
-        style={{
-          fontFamily:
-            'var(--font-display)',
-
-          letterSpacing:
-            '0.14em'
-        }}
-      >
-        Research Complete
-      </span>
-
-    </div>
-
-    <div className="h-px flex-1 divider-glow" />
-
-  </div>
-
-
-  {/* PDF BUTTON */}
-
-  <button
-    onClick={() =>
-      downloadResearchPDF({
-        topic,
-        ...result
-      })
-    }
-
-    className="
-      px-5
-      py-3
-
-      rounded-2xl
-
-      text-sm
-      font-medium
-
-      transition-all
-      duration-300
-
-      hover:scale-[1.02]
-     
-    "
-
-    style={{
-      background:
-        'rgba(59,130,246,0.10)',
-
-      border:
-        '1px solid rgba(59,130,246,0.18)',
-
-      backdropFilter:
-        'blur(20px)',
-
-      color:
-        'white'
-    }}
-  >
-    Download PDF
-  </button>
-
-</div>
-
-            {/* TABS */}
-            <div className="flex flex-wrap gap-2 mb-10">
-              {tabs.map((tab, i) => {
-                const meta = TAB_META[tab]
-                const isActive = activeTab === tab
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`tab-btn px-5 py-3 rounded-2xl flex items-center gap-2.5 ${
-                      isActive ? "tab-btn-active" : "tab-btn-inactive"
-                    }`}
-                    style={{ animationDelay: `${i * 0.06}s` }}
-                  >
-                    <span style={{
-                      color: isActive ? '#60a5fa' : 'rgba(148,163,184,0.5)',
-                      fontSize: '14px',
-                      transition: 'color 0.25s ease',
-                    }}>
-                      {meta.icon}
-                    </span>
-                    <span>{meta.label}</span>
-                    {isActive && (
-                      <span className="w-1 h-1 rounded-full bg-blue-400 ml-0.5"
-                            style={{ animation: 'neural-pulse 1.5s ease infinite' }} />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* TAB CONTENT */}
-            <div className="tab-content">
-
-              {/* ── SUMMARY ── */}
-              {activeTab === "summary" && (
-                <div className="result-card rounded-[var(--radius-xl)] overflow-hidden">
-                  {/* card header accent */}
-                  <div className="h-px w-full"
-                       style={{ background: 'linear-gradient(90deg, transparent, rgba(59,130,246,0.4), rgba(6,182,212,0.3), transparent)' }} />
-                  <div className="p-10">
-                    <div className="flex items-start justify-between mb-10">
-                      <div>
-                        <p className="section-label mb-2">AI Synthesis</p>
-                        <h2 className="result-section-title">Research Summary</h2>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                           style={{
-                             background: 'rgba(59,130,246,0.1)',
-                             border: '1px solid rgba(59,130,246,0.18)',
-                           }}>
-                        <span>◈</span>
-                      </div>
-                    </div>
-
-                  <div style={{ maxWidth: '90ch' }}>
-    <RichTextRenderer
-        text={result.summary}
-        type="summary"
-    />
-</div>
-
-                    {/* FEEDBACK */}
-                    <div className="feedback-section rounded-2xl p-8 mt-10 -mx-2">
-                      <div className="flex items-center gap-3 mb-6">
-                        <div className="h-px flex-1"
-                             style={{ background: 'rgba(255,255,255,0.04)' }} />
-                        <p className="text-xs text-zinc-500 uppercase tracking-widest"
-                           style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.14em' }}>
-                          Relevance Signal
-                        </p>
-                        <div className="h-px flex-1"
-                             style={{ background: 'rgba(255,255,255,0.04)' }} />
-                      </div>
-
-                      <p className="text-sm text-zinc-400 mb-5"
-                         style={{ fontFamily: 'var(--font-body)' }}>
-                        Was this research result useful?
-                      </p>
-
-                      <div className="flex gap-3 flex-wrap">
-                        <button
-                          onClick={() => handleGlobalFeedback("good")}
-                          className={`feedback-btn-good px-6 py-3 rounded-2xl text-sm font-semibold flex items-center gap-2.5 ${
-                            globalFeedback === "good" ? "active" : ""
-                          }`}
-                          style={{ fontFamily: 'var(--font-body)' }}
-                        >
-                          <span>👍</span>
-                          <span>Good Result</span>
-                          {globalFeedback === "good" && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 ml-1"
-                                  style={{ animation: 'neural-pulse 1.5s ease infinite' }} />
-                          )}
-                        </button>
-
-                        <button
-                          onClick={() => handleGlobalFeedback("bad")}
-                          className={`feedback-btn-bad px-6 py-3 rounded-2xl text-sm font-semibold flex items-center gap-2.5 ${
-                            globalFeedback === "bad" ? "active" : ""
-                          }`}
-                          style={{ fontFamily: 'var(--font-body)' }}
-                        >
-                          <span>👎</span>
-                          <span>Bad Result</span>
-                          {globalFeedback === "bad" && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 ml-1"
-                                  style={{ animation: 'neural-pulse 1.5s ease infinite' }} />
-                          )}
-                        </button>
-                      </div>
-
-                      {globalFeedback && (
-                        <div className="mt-5 flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full inline-block"
-                                style={{ background: globalFeedback === 'good' ? '#22c55e' : '#ef4444' }} />
-                          <p className="text-xs text-zinc-500"
-                             style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>
-                            Signal recorded — thank you
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── ANALYSIS ── */}
-              {activeTab === "analysis" && (
-                <div className="result-card rounded-[var(--radius-xl)] overflow-hidden">
-                  <div className="h-px w-full"
-                       style={{ background: 'linear-gradient(90deg, transparent, rgba(6,182,212,0.4), rgba(139,92,246,0.3), transparent)' }} />
-                  <div className="p-10">
-                    <div className="flex items-start justify-between mb-10">
-                      <div>
-                        <p className="section-label mb-2">Pattern Recognition</p>
-                        <h2 className="result-section-title">Research Analysis</h2>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                           style={{
-                             background: 'rgba(6,182,212,0.1)',
-                             border: '1px solid rgba(6,182,212,0.18)',
-                           }}>
-                        <span>⬡</span>
-                      </div>
-                    </div>
-                   <div style={{ maxWidth: '90ch' }}>
-    <RichTextRenderer text={result.analysis} />
-</div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── GAPS ── */}
-              {activeTab === "gaps" && (
-                <div className="result-card rounded-[var(--radius-xl)] overflow-hidden">
-                  <div className="h-px w-full"
-                       style={{ background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.4), rgba(59,130,246,0.3), transparent)' }} />
-                  <div className="p-10">
-                    <div className="flex items-start justify-between mb-10">
-                      <div>
-                        <p className="section-label mb-2">Opportunity Mapping</p>
-                        <h2 className="result-section-title">Research Gaps</h2>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                           style={{
-                             background: 'rgba(139,92,246,0.1)',
-                             border: '1px solid rgba(139,92,246,0.18)',
-                           }}>
-                        <span>◇</span>
-                      </div>
-                    </div>
-                    <div style={{ maxWidth: '90ch' }}>
-    <RichTextRenderer
-        text={result.gaps}
-        type="gaps"
-    />
-</div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── SYNTHESIS ── */}
-              {activeTab === "synthesis" && (
-                <div className="result-card rounded-[var(--radius-xl)] overflow-hidden">
-                  <div className="h-px w-full"
-                       style={{ background: 'linear-gradient(90deg, transparent, rgba(59,130,246,0.3), rgba(6,182,212,0.4), rgba(139,92,246,0.3), transparent)' }} />
-                  <div className="p-10">
-                    <div className="flex items-start justify-between mb-10">
-                      <div>
-                        <p className="section-label mb-2">Cross-Paper Reasoning</p>
-                        <h2 className="result-section-title">Synthesis</h2>
-                      </div>
-                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                           style={{
-                             background: 'rgba(59,130,246,0.08)',
-                             border: '1px solid rgba(59,130,246,0.15)',
-                           }}>
-                        <span>⊕</span>
-                      </div>
-                    </div>
-                    <div style={{ maxWidth: '90ch' }}>
-   <RichTextRenderer
-      text={result.synthesis}
-      type="synthesis"
-   />
-</div>
-                  </div>
-                </div>
-              )}
-
-              {/* ── PAPERS ── */}
-              {activeTab === "papers" && (
+        {/* ─── MAIN WORKSPACE CONTENT ─── */}
+        <div className="flex-1 max-w-[1400px] mx-auto px-6 sm:px-8 md:px-10 py-10">
+
+          {/* ─── KNOWLEDGE GRAPH VIEW ─── */}
+          {showKnowledgeGraph && (
+            <KnowledgeGraph isVisible={showKnowledgeGraph} />
+          )}
+
+          {/* ─── LANDING PAGE HERO SECTION (Shown when no chat is active) ─── */}
+          {!isChatActive && !showKnowledgeGraph && (
+            <div className="mb-16 relative overflow-hidden">
+              <div className="grid lg:grid-cols-1 2xl:grid-cols-[1fr_600px] gap-16 items-center">
                 <div>
-                  <div className="flex items-center justify-between mb-10">
-                    <div>
-                      <p className="section-label mb-2">Source Documents</p>
-                      <h2 className="result-section-title">Top Research Papers</h2>
-                    </div>
-                    {result.top_papers?.length > 0 && (
-                      <div className="counter-badge px-4 py-2 rounded-full flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"
-                              style={{ animation: 'neural-pulse 2s ease infinite' }} />
-                        <span className="text-zinc-300 text-xs"
-                              style={{ fontFamily: 'var(--font-display)' }}>
-                          {result.top_papers.length} papers
-                        </span>
-                      </div>
-                    )}
+                  <div className="inline-flex items-center gap-3 hero-badge px-5 py-2.5 rounded-full mb-8">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    <span className="text-cyan-300 text-xs tracking-widest uppercase" style={{ fontFamily: 'var(--font-display)' }}>
+                      Multi-Agent AI Research Platform v2.0
+                    </span>
                   </div>
-                  <div className="grid xl:grid-cols-2 gap-8">
-                    {result.top_papers?.map((paper, idx) => (
-                      <PaperCard key={idx} paper={paper} index={idx} />
+
+                  <h2 className="hero-title font-black leading-[0.98] mb-6" style={{ fontSize: 'clamp(2.8rem, 6vw, 5.5rem)', fontFamily: 'var(--font-display)' }}>
+                    <span className="hero-title-glow">Neural</span><br />
+                    <span className="gradient-text-animated">Research</span><br />
+                    <span className="hero-title-glow">Intelligence</span><br />
+                    <span className="gradient-text-animated">Engine</span>
+                  </h2>
+
+                  <p className="text-zinc-400 text-lg leading-8 max-w-xl mb-8 font-light">
+                    Adaptive multi-agent synthesis, semantic retrieval, cross-paper reasoning, intelligent clustering, and persistent chat history memory.
+                  </p>
+
+                  <div className="flex flex-wrap gap-3">
+                    {[
+                      { label: "Agents", value: "8+" },
+                      { label: "Memory", value: "SQLite" },
+                      { label: "Modes", value: "3" },
+                      { label: "Latency", value: "< 7s" },
+                    ].map((stat) => (
+                      <div key={stat.label} className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 bg-transparent backdrop-blur-xl">
+                        <span className="text-zinc-300 text-sm font-semibold">{stat.value}</span>
+                        <span className="text-zinc-600 text-xs">{stat.label}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-            </div>
-          </div>
-        )}
-
-        {/* ─── FOOTER ─── */}
-        <footer className="mt-32 pb-10">
-          <div className="divider-glow mb-8" />
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-white/90 rounded-xl p-1">
-                <img src="/logo.png" alt="" className="w-6 h-6 object-contain" />
+                {/* ARCHITECTURE GRAPH IFRAME */}
+                <div className="relative overflow-hidden rounded-[32px] border border-white/5 bg-black/40 backdrop-blur-xl shadow-2xl">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="text-xs uppercase tracking-widest text-cyan-300 font-mono">Neural Architecture</span>
+                    </div>
+                    <span className="text-xs text-zinc-500 uppercase font-mono">Live System</span>
+                  </div>
+                  <iframe src="/codegraph.html" title="Architecture Graph" className="w-full h-[400px]" />
+                </div>
               </div>
-              <span className="text-xs text-zinc-600"
-                    style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.08em' }}>
-                Synaptrix AI — Adaptive Research Intelligence System
-              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400"
-                   style={{ animation: 'neural-pulse 2s ease infinite' }} />
-              <span className="text-xs text-zinc-600"
-                    style={{ fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>
-                All systems operational
-              </span>
+          )}
+
+          {/* ─── CHAT SESSION TURN STREAM (Renders prior turns + live responses) ─── */}
+          {messages.length > 0 && (
+            <div className="chat-turns-stream mb-10 space-y-8">
+              <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                <h4 className="text-xs font-mono uppercase text-cyan-400 tracking-wider flex items-center gap-2">
+                  <span>💬</span> Session Stream ({messages.length} turns recorded)
+                </h4>
+              </div>
+
+              {messages.map((msg) => {
+                const isUser = msg.role === "user"
+                const research = msg.research_data
+                const isFollowup = research?.followup === true
+                const activeTurnTab = turnActiveTabs[msg.id] || "summary"
+
+                if (isUser) {
+                  return (
+                    <div key={msg.id} className="chat-turn-user">
+                      <span className="font-bold text-cyan-300">You:</span> {msg.content}
+                    </div>
+                  )
+                }
+
+                /* ── Follow-up response (lightweight, no tabs) ── */
+                if (isFollowup) {
+                  return (
+                    <div key={msg.id} className="glass-card rounded-[32px] p-8 border-l-4 border-l-emerald-400 space-y-4">
+                      <div className="flex items-center gap-3 pb-3 border-b border-white/5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                          <span className="text-emerald-300 text-sm">💬</span>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-bold text-base" style={{ fontFamily: 'var(--font-display)' }}>
+                            Follow-up Response
+                          </h4>
+                          <p className="text-emerald-400 text-xs font-mono">Conversational • context-aware reasoning</p>
+                        </div>
+                      </div>
+                      <RichTextRenderer text={research?.content || msg.content} type="default" />
+                    </div>
+                  )
+                }
+
+                /* ── Full research response (with tabs) ── */
+                return (
+                  <div key={msg.id} className="glass-card rounded-[32px] p-8 border-l-4 border-l-cyan-400 space-y-6">
+                    {/* ASSISTANT HEADER */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
+                          <span className="text-cyan-300 text-sm">🤖</span>
+                        </div>
+                        <div>
+                          <h4 className="text-white font-bold text-base" style={{ fontFamily: 'var(--font-display)' }}>
+                            Synaptrix AI Research Intelligence
+                          </h4>
+                          <p className="text-zinc-500 text-xs font-mono">
+                            {research?.mode_used ? `${research.mode_used} mode` : "multi-agent reasoning"} • {research?.top_papers?.length || 0} papers analyzed
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Export Menu (replaces old PDF-only button) */}
+                      {research && (
+                        <ExportMenu
+                          research={research}
+                          onDownloadPDF={downloadResearchPDF}
+                        />
+                      )}
+                    </div>
+
+                    {/* TURN TABS SELECTOR (Summary, Analysis, Gaps, Synthesis, Source Papers) */}
+                    {research && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {Object.keys(TAB_META).map((tabKey) => {
+                          const meta = TAB_META[tabKey]
+                          const isActive = activeTurnTab === tabKey
+                          return (
+                            <button
+                              key={tabKey}
+                              onClick={() => setTurnTab(msg.id, tabKey)}
+                              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all ${
+                                isActive ? "bg-cyan-500/20 border border-cyan-500/40 text-cyan-200" : "bg-white/5 text-zinc-400 hover:text-white"
+                              }`}
+                            >
+                              <span>{meta.icon}</span>
+                              <span className="capitalize">{meta.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* TAB CONTENT DISPLAY */}
+                    {research ? (
+                      <div className="pt-2">
+                        {activeTurnTab === "summary" && (
+                          <RichTextRenderer text={research.summary || msg.content} type="summary" />
+                        )}
+                        {activeTurnTab === "analysis" && (
+                          <RichTextRenderer text={research.analysis || "No analysis generated."} type="analysis" />
+                        )}
+                        {activeTurnTab === "gaps" && (
+                          <RichTextRenderer text={research.gaps || "No research gaps found."} type="gaps" />
+                        )}
+                        {activeTurnTab === "synthesis" && (
+                          <RichTextRenderer text={research.synthesis || "No cluster synthesis available."} type="synthesis" />
+                        )}
+                        {activeTurnTab === "papers" && (
+                          <div className="grid grid-cols-1 gap-6 mt-4">
+                            {(research.top_papers || []).map((paper, idx) => (
+                              <PaperCard key={idx} paper={paper} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* Fallback raw text content if no research_data object */
+                      <div className="pt-2">
+                        <RichTextRenderer text={msg.content} type="default" />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* ─── LIVE PIPELINE LOADING CARD IN CHAT STREAM ─── */}
+          {loading && (
+            <div className="glass-card rounded-[32px] p-8 border-l-4 border-l-blue-500 mb-10 space-y-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <span className="animate-spin text-xl text-cyan-400">⚡</span>
+                <div>
+                  <h4 className="text-white font-bold text-base">Synaptrix AI is Synthesizing Research...</h4>
+                  <p className="text-zinc-400 text-xs font-mono">Running multi-agent retrieval, embedding search & LLM reasoning</p>
+                </div>
+              </div>
+              <PipelineStatus currentStep={currentStep} />
+            </div>
+          )}
+
+          <div ref={chatStreamEndRef} />
+
+          {/* ─── INPUT PROMPT PANEL (Always accessible at bottom for follow-ups) ─── */}
+          <div className="anim-fade-up input-panel rounded-[36px] p-8 md:p-10 mb-8">
+            <div className="input-top-bar flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                     style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                  <span className="text-blue-400 text-sm">💡</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold text-base" style={{ fontFamily: 'var(--font-display)' }}>
+                    {isChatActive ? "Ask Follow-up or Deepen Research Session" : "Start Research Intelligence Query"}
+                  </h3>
+                  <p className="text-zinc-500 text-xs">
+                    {isChatActive ? "Persistent context memory active • follow-up questions auto-detected" : "Enter a research query below to transition into Chat Mode"}
+                  </p>
+                </div>
+              </div>
+
+              {/* MODE SELECTOR */}
+              <div className="flex items-center gap-2 p-1.5 rounded-full"
+                   style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {["fast", "parallel", "research"].map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all duration-300 ${
+                      mode === m ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* TEXTAREA INPUT */}
+            <div className="relative">
+              <textarea
+                value={topic}
+                onChange={handleTopicChange}
+                placeholder="Enter research topic, paper title, or follow-up question (e.g. Compare transformer architectures vs Mamba for long-context memory)..."
+                rows={3}
+                className="w-full ai-textarea p-5 text-zinc-100 placeholder-zinc-500 text-base"
+              />
+              
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-xs text-zinc-500 font-mono">
+                  {charCount} characters
+                </span>
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading || !topic.trim()}
+                  className="btn-generate px-8 py-3.5 rounded-2xl font-bold text-sm text-white flex items-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <span className="animate-spin text-base">⏳</span>
+                      <span>Processing Neural Pipeline...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send Research Prompt</span>
+                      <span className="text-base">🚀</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </footer>
-
+        </div>
       </div>
     </div>
   )

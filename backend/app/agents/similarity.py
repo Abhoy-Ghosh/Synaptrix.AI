@@ -1,15 +1,5 @@
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
-_model = None
-
-
-def get_model():
-    global _model
-    if _model is None:
-        print("🔄 Loading similarity model...")
-        _model = SentenceTransformer('all-mpnet-base-v2')
-    return _model
+from app.services.model_loader import get_embedding_model
 
 
 def find_similarities(papers, threshold=0.75, top_k=5):
@@ -33,7 +23,7 @@ def find_similarities(papers, threshold=0.75, top_k=5):
     if len(valid_papers) < 2:
         return []
 
-    model = get_model()
+    model = get_embedding_model()
 
     # -----------------------------
     # EMBEDDINGS

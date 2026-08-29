@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+*.pyo
+.env
+models/
+synaptrix.db
+*.db
+feedback.json
+paper_feedback.json
+.git
+.gitignore
+test_*.py
+docs/
