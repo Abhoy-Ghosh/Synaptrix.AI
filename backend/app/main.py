@@ -1,10 +1,16 @@
+import sys
+import os
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Literal
 from contextlib import asynccontextmanager
 import asyncio
 
-from app.ai_engine.pipeline import run_pipeline, warmup_model
+from app.ai_engine.pipeline import run_pipeline
+from app.services.model_loader import warmup_model
 from app.feedback.feedback_store import add_feedback
 from app.feedback.paper_feedback import add_paper_feedback
 
@@ -12,19 +18,43 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes.pdf import router as pdf_router
 
+from app.storage.db import init_db
+from app.routes.projects import router as projects_router
+from app.routes.chats import router as chats_router
+from app.routes.search import router as search_router
+from app.routes.dashboard import router as dashboard_router
+from app.routes.knowledge_graph import router as kg_router
+
 # -----------------------------
 # STARTUP
 # -----------------------------
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
+    print("[*] Starting Synaptrix AI...")
+
+    init_db()
+    print("[+] Database initialized")
+
+    warmup_model()
+
+    print("[+] Warmup complete")
+
     yield
+
+    print("[-] Shutting down...")
 
 
 app = FastAPI(lifespan=lifespan)
 
+# CORS — configurable via ALLOWED_ORIGINS env var
+allowed_origins = os.environ.get("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # frontend URL later
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,6 +64,11 @@ app.add_middleware(
 # ROUTES
 # -----------------------------
 app.include_router(pdf_router)
+app.include_router(projects_router)
+app.include_router(chats_router)
+app.include_router(search_router)
+app.include_router(dashboard_router)
+app.include_router(kg_router)
 
 # -----------------------------
 # REQUEST MODELS

@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: synaptrix-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SEMANTIC_SCHOLAR_API_KEY
+        sync: false
+      - key: SPRINGER_META_API_KEY
+        sync: false
+      - key: IEEE_API_KEY
+        sync: false
+      - key: DATA_DIR
+        value: /opt/render/project/data
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: PORT
+        value: "8001"
+    disk:
+      name: synaptrix-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

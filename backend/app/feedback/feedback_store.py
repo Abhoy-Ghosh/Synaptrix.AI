@@ -1,7 +1,8 @@
 import json
 import os
 
-FEEDBACK_FILE = "feedback.json"
+BASE_DIR = os.environ.get("DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
+FEEDBACK_FILE = os.path.join(BASE_DIR, "feedback.json")
 
 
 def load_feedback():

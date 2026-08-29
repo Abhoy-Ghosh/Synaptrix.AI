@@ -1,62 +1,214 @@
 import faiss
 import numpy as np
 
-# Global index + metadata
+# =========================================
+# GLOBAL STATE
+# =========================================
+
 index = None
+
 documents = []
 
+MAX_DOCS = 200
 
-def create_index(embeddings, docs):
+
+# =========================================
+# RESET INDEX
+# =========================================
+
+def reset_index():
+
     global index, documents
 
-    if embeddings is None or len(embeddings) == 0:
+    index = None
+
+    documents = []
+
+    print("🧹 FAISS index reset")
+
+
+# =========================================
+# CREATE INDEX
+# =========================================
+
+def create_index(
+
+    embeddings,
+    docs
+
+):
+
+    global index, documents
+
+    if (
+        embeddings is None
+        or len(embeddings) == 0
+    ):
+
         print("⚠️ No embeddings to index")
+
         return
 
-    embeddings = embeddings.astype("float32")
-    faiss.normalize_L2(embeddings)
+    embeddings = embeddings.astype(
+        "float32"
+    )
+
+    faiss.normalize_L2(
+        embeddings
+    )
 
     dim = embeddings.shape[1]
 
-    # 🔥 COSINE SIMILARITY INDEX
+    # =====================================
+    # COSINE SIMILARITY
+    # =====================================
+
     index = faiss.IndexFlatIP(dim)
+
     index.add(embeddings)
 
-    documents = docs
+    documents = docs.copy()
+
+    print(
+        f"✅ Created FAISS index "
+        f"with {len(documents)} docs"
+    )
 
 
-def add_to_index(embeddings, docs):
+# =========================================
+# ADD TO INDEX
+# =========================================
+
+def add_to_index(
+
+    embeddings,
+    docs
+
+):
+
     global index, documents
 
-    if embeddings is None or len(embeddings) == 0:
+    if (
+        embeddings is None
+        or len(embeddings) == 0
+    ):
+
         return
 
-    embeddings = embeddings.astype("float32")
-    faiss.normalize_L2(embeddings)
+    embeddings = embeddings.astype(
+        "float32"
+    )
+
+    faiss.normalize_L2(
+        embeddings
+    )
+
+    # =====================================
+    # CREATE FIRST INDEX
+    # =====================================
 
     if index is None:
-        create_index(embeddings, docs)
-    else:
-        index.add(embeddings)
-        documents.extend(docs)
+
+        create_index(
+            embeddings,
+            docs
+        )
+
+        return
+
+    # =====================================
+    # LIMIT GROWTH
+    # =====================================
+
+    if len(documents) > MAX_DOCS:
+
+        print(
+            "⚠️ FAISS limit reached"
+        )
+
+        print(
+            "🧹 Resetting vector DB"
+        )
+
+        reset_index()
+
+        create_index(
+            embeddings,
+            docs
+        )
+
+        return
+
+    # =====================================
+    # ADD NEW
+    # =====================================
+
+    index.add(embeddings)
+
+    documents.extend(docs)
+
+    print(
+        f"📦 Total indexed docs: "
+        f"{len(documents)}"
+    )
 
 
-def search_index(query_embedding, k=5):
+# =========================================
+# SEARCH
+# =========================================
+
+def search_index(
+
+    query_embedding,
+    k=5
+
+):
+
     global index, documents
 
     if index is None:
+
         return []
 
-    query_embedding = np.array([query_embedding]).astype("float32")
+    query_embedding = np.array([
 
-    # 🔥 normalize query too
-    faiss.normalize_L2(query_embedding)
+        query_embedding
 
-    distances, indices = index.search(query_embedding, k)
+    ]).astype("float32")
+
+    faiss.normalize_L2(
+        query_embedding
+    )
+
+    distances, indices = index.search(
+
+        query_embedding,
+
+        k
+    )
 
     results = []
-    for i in indices[0]:
-        if 0 <= i < len(documents):
-            results.append(documents[i])
+
+    seen = set()
+
+    for idx in indices[0]:
+
+        if (
+            0 <= idx < len(documents)
+        ):
+
+            paper = documents[idx]
+
+            title = paper.get(
+                "title",
+                ""
+            ).lower()
+
+            if title in seen:
+                continue
+
+            seen.add(title)
+
+            results.append(paper)
 
     return results

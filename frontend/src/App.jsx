@@ -4,30 +4,39 @@ import {
   Route,
 } from "react-router-dom"
 
+import { ThemeProvider } from "./components/ThemeProvider"
 import Home from "./pages/Home"
 import Guide from "./pages/Guide"
+import Dashboard from "./pages/Dashboard"
 
 function App() {
 
   return (
 
-    <BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
 
-      <Routes>
+        <Routes>
 
-        <Route
-          path="/"
-          element={<Home />}
-        />
+          <Route
+            path="/"
+            element={<Home />}
+          />
 
-        <Route
-          path="/guide"
-          element={<Guide />}
-        />
+          <Route
+            path="/guide"
+            element={<Guide />}
+          />
 
-      </Routes>
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
 
-    </BrowserRouter>
+        </Routes>
+
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 
