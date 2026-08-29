@@ -49,25 +49,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORS — robust handling for Vercel, localhost, and custom domains
-raw_origins = os.environ.get("ALLOWED_ORIGINS", "*").strip()
-if raw_origins == "*" or not raw_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-else:
-    origins_list = [o.strip() for o in raw_origins.split(",") if o.strip()]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins_list,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# CORS — allow Vercel production frontend, previews, localhost, and all headers/methods
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://synaptrix-ai.vercel.app",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+    ],
+    allow_origin_regex=r"https?://.*",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 # -----------------------------
 # ROUTES
