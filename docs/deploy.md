@@ -37,7 +37,7 @@ git push origin main
    - `SEMANTIC_SCHOLAR_API_KEY` = your key
    - `SPRINGER_META_API_KEY` = your key
    - `IEEE_API_KEY` = your key
-   - `ALLOWED_ORIGINS` = `https://your-frontend.vercel.app`
+   - `ALLOWED_ORIGINS` = `https://synaptrix-ai.vercel.app`
 
 ### Option B: Manual Setup
 1. Go to Render → **New** → **Web Service**
@@ -78,7 +78,7 @@ Test it: `curl https://synaptrix-api.onrender.com/` → should return `{"status"
 ## Step 4: Update CORS
 
 After both are deployed, go back to Render and update:
-- `ALLOWED_ORIGINS` = `https://your-project.vercel.app`
+- `ALLOWED_ORIGINS` = `https://synaptrix-ai.vercel.app`
 
 ---
 
